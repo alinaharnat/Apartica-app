@@ -1,12 +1,11 @@
+// backend/server.js
 const express = require('express');
 const connectDB = require('./connectDB');
 require('dotenv').config();
 
-console.log('Server file loaded');
-
 const app = express();
 
-connectDB();
+connectDB(); // єдине підключення до MongoDB
 
 app.get('/', (req, res) => {
   res.send('Hello, MongoDB!');
