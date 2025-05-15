@@ -1,7 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
-import './LoginPage.css';
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -129,7 +126,6 @@ const App = () => {
 
   return (
     <div>
-      <Navbar />
       <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
           {user ? (
@@ -305,7 +301,6 @@ const App = () => {
           )}
         </div>
       </div>
-      <Footer />
     </div>
   );
 };
