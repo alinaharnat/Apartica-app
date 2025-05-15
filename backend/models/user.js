@@ -17,12 +17,12 @@ const userSchema = mongoose.Schema(
       type: String,
       required: true
     },
-    phoneNumber: {
-      type: String,
-      required: true
+    displayName: {
+      type: String // <-- нове поле (може дублювати name)
     },
-    profilePicture: {
+    phoneNumber: {
       type: String
+      // Більше не required — щоб Google-реєстрація працювала
     },
     isBlocked: {
       type: Boolean,
@@ -35,17 +35,30 @@ const userSchema = mongoose.Schema(
     },
     googleId: {
       type: String,
-      sparse: true, // Дозволяє null, але унікальні значення
+      sparse: true
     },
     emailVerificationToken: {
-      type: String,
+      type: String
     },
     emailVerificationTokenExpires: {
-      type: Date,
+      type: Date
     },
     isEmailVerified: {
       type: Boolean,
       default: false
+    },
+    dateOfBirth: {
+      type: Date
+    },
+    nationality: {
+      type: String
+    },
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'other']
+    },
+    address: {
+      type: String
     }
   },
   {
