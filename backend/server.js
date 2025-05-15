@@ -8,7 +8,7 @@ const connectDB = require('./connectDB');
 require('dotenv').config();
 
 // Імпортуємо модель користувача (переконайтеся, що шлях правильний)
-const User = require('./models/userModel');
+const User = require('./models/user');
 
 const app = express();
 
