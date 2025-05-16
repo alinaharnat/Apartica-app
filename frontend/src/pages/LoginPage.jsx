@@ -1,8 +1,256 @@
-import React, { useState, useEffect } from 'react';
+// import React, { useState, useEffect } from 'react';
+// import Navbar from "../components/Navbar.jsx";
+// import Footer from "../components/Footer.jsx";
+// import { Link } from "react-router-dom";
+//
+// const LoginPage = () => {
+//   const [user, setUser] = useState(null);
+//   const [view, setView] = useState('login');
+//   const [email, setEmail] = useState('');
+//   const [verificationCode, setVerificationCode] = useState('');
+//   const [formData, setFormData] = useState({
+//     name: '',
+//     email: '',
+//     phoneNumber: ''
+//   });
+//   const [message, setMessage] = useState(null);
+//   const [loading, setLoading] = useState(false);
+//
+//   useEffect(() => {
+//     const token = localStorage.getItem('token');
+//     const savedUser = localStorage.getItem('user');
+//     if (token && savedUser) {
+//       setUser(JSON.parse(savedUser));
+//     }
+//   }, []);
+//
+//   const handleChange = (e) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//   };
+//
+//   const handleRegister = async (e) => {
+//     e.preventDefault();
+//     setLoading(true);
+//     setMessage(null);
+//     try {
+//       const response = await fetch('http://localhost:5000/api/auth/register', {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(formData)
+//       });
+//       const data = await response.json();
+//       if (!response.ok) throw new Error(data.message || 'Помилка реєстрації');
+//       setEmail(formData.email);
+//       setMessage({ type: 'success', text: 'Код підтвердження надіслано! Перевірте пошту.' });
+//       setView('verify');
+//     } catch (error) {
+//       setMessage({ type: 'error', text: error.message });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+//
+//   const handleEmailLogin = async (e) => {
+//     e.preventDefault();
+//     setLoading(true);
+//     setMessage(null);
+//     try {
+//       const response = await fetch('http://localhost:5000/api/auth/email-login', {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ email })
+//       });
+//       const data = await response.json();
+//       if (!response.ok) throw new Error(data.message || 'Помилка входу');
+//       setMessage({ type: 'success', text: 'Код підтвердження надіслано!' });
+//       setView('verify');
+//     } catch (error) {
+//       setMessage({ type: 'error', text: error.message });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+//
+//   const handleVerify = async (e) => {
+//     e.preventDefault();
+//     setLoading(true);
+//     setMessage(null);
+//     try {
+//       const response = await fetch('http://localhost:5000/api/auth/verify-email', {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ email, token: verificationCode })
+//       });
+//       const data = await response.json();
+//       if (!response.ok) throw new Error(data.message || 'Помилка підтвердження');
+//       localStorage.setItem('token', data.token);
+//       localStorage.setItem('user', JSON.stringify(data));
+//       setUser(data);
+//       setMessage({ type: 'success', text: 'Вхід успішний!' });
+//     } catch (error) {
+//       setMessage({ type: 'error', text: error.message });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+//
+//   const handleLogout = () => {
+//     localStorage.removeItem('token');
+//     localStorage.removeItem('user');
+//     setUser(null);
+//   };
+//
+//   return (
+//     <div className="min-h-screen bg-[#FDF6F2] text-gray-800">
+//       <Navbar user={user} />
+//       <div className="max-w-xl mx-auto mt-24 bg-white shadow-xl rounded-lg px-8 py-10">
+//         <h2 className="text-2xl font-semibold mb-2">Log in or create an account</h2>
+//         <p className="mb-6 text-sm">You can log in with your Apartica.com account to use our services.</p>
+//
+//         {message && (
+//           <div className={`p-3 mb-4 rounded text-sm ${message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+//             {message.text}
+//           </div>
+//         )}
+//
+//         {view === 'login' && (
+//           <form onSubmit={handleEmailLogin} className="space-y-4">
+//             <input
+//               type="email"
+//               value={email}
+//               onChange={(e) => setEmail(e.target.value)}
+//               placeholder="Email"
+//               className="w-full border border-[#999] p-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+//               required
+//             />
+//             <button
+//               type="submit"
+//               className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700"
+//               disabled={loading}
+//             >
+//               {loading ? 'Loading...' : 'Continue with email'}
+//             </button>
+//           </form>
+//         )}
+//
+//         {view === 'register' && (
+//           <form onSubmit={handleRegister} className="space-y-4">
+//             <input
+//               type="text"
+//               name="name"
+//               value={formData.name}
+//               onChange={handleChange}
+//               placeholder="Name"
+//               className="w-full border border-[#999] p-2 rounded"
+//               required
+//             />
+//             <input
+//               type="email"
+//               name="email"
+//               value={formData.email}
+//               onChange={handleChange}
+//               placeholder="Email"
+//               className="w-full border border-[#999] p-2 rounded"
+//               required
+//             />
+//             <input
+//               type="tel"
+//               name="phoneNumber"
+//               value={formData.phoneNumber}
+//               onChange={handleChange}
+//               placeholder="Phone Number"
+//               className="w-full border border-[#999] p-2 rounded"
+//               required
+//             />
+//             <button
+//               type="submit"
+//               className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700"
+//               disabled={loading}
+//             >
+//               {loading ? 'Registering...' : 'Continue with email'}
+//             </button>
+//           </form>
+//         )}
+//
+//         {view === 'verify' && (
+//           <form onSubmit={handleVerify} className="space-y-4">
+//             <p className="text-sm">Код надіслано на {email}</p>
+//             <input
+//               type="text"
+//               value={verificationCode}
+//               onChange={(e) => setVerificationCode(e.target.value)}
+//               placeholder="Verification Code"
+//               className="w-full text-center text-xl border border-[#999] p-2 rounded"
+//               maxLength={6}
+//               required
+//             />
+//             <button
+//               type="submit"
+//               className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700"
+//               disabled={loading}
+//             >
+//               {loading ? 'Verifying...' : 'Verify'}
+//             </button>
+//           </form>
+//         )}
+//
+//         <div className="mt-6 text-center text-sm text-gray-600">or choose one of the options</div>
+//
+//         <div className="mt-4 flex justify-center gap-6">
+//           <button
+//             onClick={() => window.location.href = 'http://localhost:5000/api/auth/google'}
+//             className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded shadow-md hover:shadow-lg"
+//           >
+//             <img src="../assets/instagram.png" alt="Google" className="w-6 h-6" />
+//           </button>
+//
+//           <button
+//             disabled
+//             className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded shadow-md bg-gray-100 cursor-not-allowed"
+//           >
+//             <img src="../assets/facebook.png" alt="Facebook" className="w-6 h-6 opacity-50" />
+//           </button>
+//         </div>
+//
+//         <div className="mt-6 text-center text-sm">
+//           {view === 'login' ? (
+//             <span>
+//               Don't have an account?{' '}
+//               <button onClick={() => setView('register')} className="text-purple-600 hover:underline">
+//                 Register
+//               </button>
+//             </span>
+//           ) : (
+//             <span>
+//               Already have an account?{' '}
+//               <button onClick={() => setView('login')} className="text-purple-600 hover:underline">
+//                 Log in
+//               </button>
+//             </span>
+//           )}
+//         </div>
+//       </div>
+//       <Footer />
+//     </div>
+//   );
+// };
+//
+// export default LoginPage;
 
-const App = () => {
+import facebook from '../assets/facebook.png';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import Navbar from "../components/Navbar.jsx";
+import Footer from "../components/Footer.jsx";
+
+const LoginPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const queryParams = new URLSearchParams(location.search);
+
   const [user, setUser] = useState(null);
-  const [view, setView] = useState('login'); // 'login', 'register', 'verify'
+  const [view, setView] = useState(queryParams.get('mode') === 'register' ? 'register' : 'login');
   const [email, setEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [formData, setFormData] = useState({
@@ -13,41 +261,34 @@ const App = () => {
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Перевірка збереженого токена
   useEffect(() => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-
     if (token && savedUser) {
       setUser(JSON.parse(savedUser));
     }
   }, []);
 
-  // Обробка зміни полів форми
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Реєстрація користувача
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
-
     try {
       const response = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-
       const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Помилка реєстрації');
+        setMessage({ type: 'error', text: data.message || 'Помилка реєстрації' });
+        return;
       }
-
       setEmail(formData.email);
       setMessage({ type: 'success', text: 'Код підтвердження надіслано! Перевірте пошту.' });
       setView('verify');
@@ -58,26 +299,22 @@ const App = () => {
     }
   };
 
-  // Вхід через пошту
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
-
     try {
       const response = await fetch('http://localhost:5000/api/auth/email-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
-
       const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Помилка входу');
+        setMessage({ type: 'error', text: data.message || 'Помилка входу!' });
+        return;
       }
-
-      setMessage({ type: 'success', text: 'Код підтвердження надіслано! Перевірте пошту.' });
+      setMessage({ type: 'success', text: 'Код підтвердження надіслано!' });
       setView('verify');
     } catch (error) {
       setMessage({ type: 'error', text: error.message });
@@ -86,26 +323,21 @@ const App = () => {
     }
   };
 
-  // Перевірка коду підтвердження
   const handleVerify = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
-
     try {
       const response = await fetch('http://localhost:5000/api/auth/verify-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, token: verificationCode })
       });
-
       const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Помилка перевірки коду');
+        setMessage({ type: 'error', text: data.message || 'Помилка підтвердження!' });
+        return;
       }
-
-      // Зберігаємо дані користувача
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data));
       setUser(data);
@@ -117,192 +349,148 @@ const App = () => {
     }
   };
 
-  // Вихід з системи
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+  const switchView = (target) => {
+    setView(target);
+    navigate(`/login?mode=${target}`);
   };
 
   return (
-    <div>
-      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-          {user ? (
-            // Інформація про користувача
-            <div>
-              <h2 className="text-2xl font-bold mb-4 text-center">Ви увійшли як</h2>
-              <div className="bg-gray-100 p-4 rounded mb-4">
-                <p><strong>Ім'я:</strong> {user.name}</p>
-                <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>Тип користувача:</strong> {user.userType}</p>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="w-full bg-red-600 text-white p-2 rounded hover:bg-red-700"
-              >
-                Вийти
-              </button>
+    <div className="min-h-screen flex flex-col bg-[#FDF6F2] text-gray-800">
+      <Navbar user={user} hideAuthLinks />
+
+      <main className="flex-grow flex items-center justify-center px-4 pt-32 pb-12">
+        <div className="max-w-xl w-full bg-white shadow-xl rounded-lg px-8 py-10">
+          <h2 className="text-2xl font-semibold mb-2">Log in or create an account</h2>
+          <p className="mb-6 text-sm">You can log in with your Apartica.com account to use our services.</p>
+
+          {message && (
+            <div className={`p-3 mb-4 rounded text-sm ${message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+              {message.text}
             </div>
-          ) : (
-            // Форми автентифікації
-            <>
-              {message && (
-                <div className={`p-3 mb-4 rounded ${message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                  {message.text}
-                </div>
-              )}
-
-              {view === 'login' && (
-                <>
-                  <h2 className="text-2xl font-bold mb-4 text-center">Вхід</h2>
-                  <form onSubmit={handleEmailLogin}>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 mb-2">Email</label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full p-2 border rounded"
-                        required
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 mb-2"
-                      disabled={loading}
-                    >
-                      {loading ? 'Завантаження...' : 'Отримати код'}
-                    </button>
-                  </form>
-                  <div className="mt-4 text-center">
-                    <p>
-                      Немає облікового запису?{' '}
-                      <button
-                        onClick={() => setView('register')}
-                        className="text-blue-600 hover:underline"
-                      >
-                        Зареєструватися
-                      </button>
-                    </p>
-                  </div>
-                  <div className="mt-4">
-                    <button
-                      onClick={() => window.location.href = 'http://localhost:5000/api/auth/google'}
-                      className="w-full border border-gray-300 p-2 rounded flex items-center justify-center"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" className="mr-2">
-                        <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
-                        <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" />
-                        <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" />
-                        <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" />
-                      </svg>
-                      Увійти через Google
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {view === 'register' && (
-                <>
-                  <h2 className="text-2xl font-bold mb-4 text-center">Реєстрація</h2>
-                  <form onSubmit={handleRegister}>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 mb-2">Ім'я</label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                        required
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 mb-2">Email</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                        required
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 mb-2">Номер телефону</label>
-                      <input
-                        type="tel"
-                        name="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                        required
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
-                      disabled={loading}
-                    >
-                      {loading ? 'Завантаження...' : 'Зареєструватися'}
-                    </button>
-                  </form>
-                  <div className="mt-4 text-center">
-                    <p>
-                      Вже є обліковий запис?{' '}
-                      <button
-                        onClick={() => setView('login')}
-                        className="text-blue-600 hover:underline"
-                      >
-                        Увійти
-                      </button>
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {view === 'verify' && (
-                <>
-                  <h2 className="text-2xl font-bold mb-2 text-center">Підтвердження коду</h2>
-                  <p className="text-center text-gray-600 mb-4">
-                    Введіть код, надісланий на {email}
-                  </p>
-                  <form onSubmit={handleVerify}>
-                    <div className="mb-4">
-                      <input
-                        type="text"
-                        value={verificationCode}
-                        onChange={(e) => setVerificationCode(e.target.value)}
-                        className="w-full p-2 border rounded text-center text-2xl tracking-widest"
-                        placeholder="Введіть код"
-                        maxLength={6}
-                        required
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 mb-2"
-                      disabled={loading}
-                    >
-                      {loading ? 'Перевірка...' : 'Підтвердити код'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setView('login')}
-                      className="w-full text-gray-600 p-2 rounded hover:underline"
-                    >
-                      Повернутися назад
-                    </button>
-                  </form>
-                </>
-              )}
-            </>
           )}
+
+          {view === 'login' && (
+            <form onSubmit={handleEmailLogin} className="space-y-4">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                className="w-full border border-[#999] p-2 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                required
+              />
+              <button
+                type="submit"
+                className="w-full bg-purple-600 text-white py-3 rounded hover:bg-purple-700 text-lg"
+                disabled={loading}
+              >
+                {loading ? 'Loading...' : 'Continue with email'}
+              </button>
+            </form>
+          )}
+
+          {view === 'register' && (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Name"
+                className="w-full border border-[#999] p-2 rounded"
+                required
+              />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Email"
+                className="w-full border border-[#999] p-2 rounded"
+                required
+              />
+              <input
+                type="tel"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                placeholder="Phone Number"
+                className="w-full border border-[#999] p-2 rounded"
+                required
+              />
+              <button
+                type="submit"
+                className="w-full bg-purple-600 text-white py-3 rounded hover:bg-purple-700 text-lg"
+                disabled={loading}
+              >
+                {loading ? 'Registering...' : 'Continue with email'}
+              </button>
+            </form>
+          )}
+
+          {view === 'verify' && (
+            <form onSubmit={handleVerify} className="space-y-4">
+              <p className="text-sm">Код надіслано на {email}</p>
+              <input
+                type="text"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+                placeholder="Verification Code"
+                className="w-full text-center text-xl border border-[#999] p-2 rounded"
+                maxLength={6}
+                required
+              />
+              <button
+                type="submit"
+                className="w-full bg-purple-600 text-white py-3 rounded hover:bg-purple-700 text-lg"
+                disabled={loading}
+              >
+                {loading ? 'Verifying...' : 'Verify'}
+              </button>
+            </form>
+          )}
+
+          <div className="mt-6 text-center text-sm text-gray-600">or choose one of the options</div>
+
+          <div className="mt-4 flex justify-center gap-6">
+            <button
+              onClick={() => window.location.href = 'http://localhost:5000/api/auth/google'}
+              className="w-16 h-16 flex items-center justify-center border border-gray-300 rounded shadow-md hover:shadow-lg"
+            >
+              <img src={facebook} alt="Google" className="w-8 h-8" />
+            </button>
+
+            <button
+              disabled
+              className="w-16 h-16 flex items-center justify-center border border-gray-300 rounded shadow-md bg-gray-100 cursor-not-allowed"
+            >
+              <img src={facebook} alt="Facebook" className="w-8 h-8 opacity-50" />
+            </button>
+          </div>
+
+          <div className="mt-6 text-center text-sm">
+            {view === 'login' ? (
+              <span>
+                Don't have an account?{' '}
+                <a onClick={() => switchView('register')} className="text-purple-600 hover:underline cursor-pointer">
+                  Register
+                </a>
+              </span>
+            ) : (
+              <span>
+                Already have an account?{' '}
+                <a onClick={() => switchView('login')} className="text-purple-600 hover:underline cursor-pointer">
+                  Log in
+                </a>
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      </main>
+
+      <Footer />
     </div>
   );
 };
 
-export default App;
+export default LoginPage;
