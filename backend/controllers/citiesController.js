@@ -1,4 +1,4 @@
-const getTopCities = async (req, res) => {
+{/*const getTopCities = async (req, res) => {
   try {
     const topCities = await City.aggregate([
       {
@@ -32,4 +32,4 @@ const getTopCities = async (req, res) => {
 
 module.exports = {
   getTopCities
-};
+};*/}
