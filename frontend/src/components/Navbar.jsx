@@ -43,7 +43,7 @@ const Navbar = () => {
       ];
 
     return (
-      <div className="min-h-screen bg-[#FFF8F2] font-montserrat">
+      <div className="min-h-screen font-montserrat">
           <nav className={`fixed top-0 left-0 w-full flex items-center justify-between px-4 md:px-16 lg:px-24 xl:px-32 transition-all duration-500 z-50 ${isScrolled ? "bg-[#8252A1] shadow-md py-3 md:py-4" : "bg-[#8252A1] py-4 md:py-6"}`}>
               {/* Logo */}
               <Link to="/" className="flex items-center gap-2">
@@ -120,7 +120,7 @@ const Navbar = () => {
           </nav>
 
           {/* Dummy scroll area */}
-          <div className="h-[2000px] bg-[#FFF8F2]"></div>
+         {/* <div className="h-[2000px] bg-[#FFF8F2]"></div>*/} 
       </div>
     );
 };
