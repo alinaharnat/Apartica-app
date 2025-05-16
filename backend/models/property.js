@@ -1,3 +1,4 @@
+// models/Property.js
 const mongoose = require('mongoose');
 
 const propertySchema = new mongoose.Schema({
@@ -8,8 +9,7 @@ const propertySchema = new mongoose.Schema({
   longitude: { type: Number },
   bedrooms: { type: Number, default: 1 },
   bathrooms: { type: Number, default: 1 },
-  
-  // Зв’язки
+  cityId: { type: mongoose.Schema.Types.ObjectId, ref: 'City', required: true },
   amenities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Amenity' }],
   photos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Photo' }],
   rooms: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Room' }],
@@ -20,4 +20,5 @@ const propertySchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
 module.exports = mongoose.model('Property', propertySchema);
