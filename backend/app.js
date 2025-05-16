@@ -4,6 +4,7 @@ const passport = require('passport');
 const dotenv = require('dotenv');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const cityRoutes = require('./routes/cityRoutes');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 dotenv.config();
@@ -23,7 +24,7 @@ require('./config/passport')(passport);
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
-
+app.use('/api', cityRoutes);
 // Health check route
 app.get('/', (req, res) => {
   res.send('API works');
