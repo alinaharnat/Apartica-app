@@ -24,8 +24,8 @@ const Navbar = ({ user, hideAuthLinks = false }) => {
       : user
         ? [] // Rendered below with dropdown
         : [
-            { name: 'Register', path: '/auth?mode=register' }, // Тепер /auth
-            { name: 'Sign in', path: '/auth?mode=login' },   // Тепер /auth
+            { name: 'Register', path: '/login?mode=register' },
+            { name: 'Sign in', path: '/login?mode=login' },
         ];
 
     useEffect(() => {

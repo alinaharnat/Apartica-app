@@ -1,9 +1,8 @@
-// src/main.jsx
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
-import AuthPage from './pages/AuthPage'; // Ваш компонент для автентифікації
+import LoginPage from './pages/LoginPage';
 import AuthSuccess from './components/AuthSuccess';
 import './index.css';
 
@@ -12,7 +11,7 @@ createRoot(document.getElementById('root')).render(
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/auth" element={<AuthPage />} /> {/* ОСНОВНИЙ МАРШРУТ ДЛЯ АВТЕНТИФІКАЦІЇ */}
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/auth-success" element={<AuthSuccess />} />
       </Routes>
     </Router>
