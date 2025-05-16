@@ -1,5 +1,5 @@
 //controllers/authController.js
-const User = require('../../models/user');
+const User = require('../models/user');
 const { generateToken, generateEmailVerificationToken } = require('../utilits/generateToken');
 const { generateUserId } = require('../utilits/generateId');
 const { sendVerificationEmail } = require('../config/email');
