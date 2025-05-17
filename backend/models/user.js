@@ -19,11 +19,6 @@ const userSchema = mongoose.Schema(
         'Будь ласка, вкажіть дійсну електронну пошту',
       ],
     },
-    email: {
-      type: String,
-      required: true,
-      unique: true
-    },
     name: {
       type: String,
       required: true
