@@ -24,7 +24,10 @@ const HomePage = () => {
         <h1 className="text-3xl font-bold mb-4">Вітаємо в Apartica</h1>
         <p>На цій сторінці з’явиться домашній контент</p>
       </main>
-      <PopularCities />
+       <div className="mb-10">
+        <PopularCities />
+       </div>
+      
       <div className="mb-10">
         <NewCustomerDiscount />
       </div>

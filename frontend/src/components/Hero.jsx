@@ -162,7 +162,7 @@ const Hero = () => {
                 </form>
 
                 {/* Текст знизу картинки */}
-                <h1 className="text-white text-3xl font-bold mt-12">Hotels</h1>
+                <h1 className="text-white text-basic font-bold mt-12">Your ideal hotel stay is just a few clicks away!</h1>
             </div>
         </div>
     );
