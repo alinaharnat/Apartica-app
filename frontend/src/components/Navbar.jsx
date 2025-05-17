@@ -10,7 +10,7 @@ const Navbar = ({ user, hideAuthLinks = false }) => {
 
     const staticLinks = [
         { name: 'Home', path: '/' },
-        { name: 'List your property', path: '/' },
+        { name: 'List your property', path: '/list-your-property' },
     ];
 
     const handleLogout = () => {

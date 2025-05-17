@@ -1,20 +1,63 @@
+// models/Booking.js
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-const bookingSchema = new mongoose.Schema({
-  rooms: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true }],
-  renter: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  checkInDate: { type: Date, required: true },
-  checkOutDate: { type: Date, required: true },
-  totalPrice: { type: Number, required: true },
+const bookingSchema = new Schema({
+  propertyId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Property',
+    required: true,
+  },
+  roomId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Room',
+    required: true,
+  },
+  renterId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  checkIn: {
+    type: Date,
+    required: true,
+  },
+  checkOut: {
+    type: Date,
+    required: true,
+  },
+  totalPrice: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+  paymentId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Payment',
+  },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'cancelled'],
-    default: 'pending'
+    required: true,
+    enum: ['pending', 'confirmed', 'cancelled_by_renter', 'cancelled_by_owner', 'completed', 'failed'],
+    default: 'pending',
   },
-  payment: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment' },
-  createdAt: { type: Date, default: Date.now }
-}, {
-  timestamps: true
+  numberOfGuests: {
+    type: Number,
+    required: true,
+    min: 1,
+  },
+}, { timestamps: true });
+
+bookingSchema.index({ propertyId: 1 });
+bookingSchema.index({ renterId: 1 });
+bookingSchema.index({ status: 1 });
+
+bookingSchema.pre('save', function(next) {
+  if (this.checkOut <= this.checkIn) {
+    next(new Error('Check-out date must be after check-in date.'));
+  } else {
+    next();
+  }
 });
 
 module.exports = mongoose.model('Booking', bookingSchema);

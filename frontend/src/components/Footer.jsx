@@ -1,3 +1,4 @@
+// src/components/Footer.jsx
 import React from "react";
 import telegram from '../assets/telegram.png';
 import facebook from '../assets/facebook.png';
@@ -5,58 +6,53 @@ import instagram from '../assets/instagram.png';
 import twitter from '../assets/twitter.png';
 import flag from '../assets/flag.png';
 import bee from '../assets/bee.jpg';
+import { Link } from 'react-router-dom'; // <-- ІМПОРТУЙТЕ LINK
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear(); // Динамічний рік
+
   return (
-    <footer className="w-full bg-[#ffffff] text-center text-sm py-4">
-      <div className="flex flex-wrap justify-between items-center max-w-full px-4 md:px-12">
-        {/* Left block (Logo + Language/Currency/About) */}
-       <div className="flex items-center gap-3 text-xs md:text-sm text-gray-700">
-  {/* Прапор і English */}
-  <span className="flex items-center gap-1">
-    <img src={flag} className="h-4 w-auto" />
-    <span>English</span>
-  </span>
-
-  {/* Валюта */}
-  <span>EUR</span>
-
-  {/* About us */}
- <a href="#" className="!text-gray-700 font-semibold ">About us</a>
-
-
-
-</div>
+    <footer className="w-full bg-[#ffffff] text-center text-sm py-4 mt-auto"> {/* mt-auto допоможе притиснути футер донизу, якщо контенту мало */}
+      <div className="container mx-auto flex flex-wrap justify-between items-center max-w-full px-4 md:px-12"> {/* Додав container mx-auto для кращого центрування */}
+        {/* Left block (Language/Currency/Links) */}
+        <div className="flex items-center gap-x-4 gap-y-2 text-xs md:text-sm text-gray-700 flex-wrap"> {/* Додав flex-wrap та gap-y-2 для кращого переносу на малих екранах */}
+          <span className="flex items-center gap-1">
+            <img src={flag} alt="Language Flag" className="h-4 w-auto" /> {/* Додав alt для зображення */}
+            <span>English</span>
+          </span>
+          <span>EUR</span>
+          <Link to="/rules" className="text-gray-700 font-semibold hover:text-purple-600 transition-colors duration-200">
+             About us
+          </Link>
+        </div>
 
         {/* Center block (Description + Copyright + Group) */}
-        <div className="text-xs text-gray-500 text-center mx-auto mt-3 md:mt-0">
+        <div className="w-full md:w-auto text-xs text-gray-500 text-center mx-auto mt-4 md:mt-0"> {/* Додав w-full для кращого центрування на моб. */}
           <p>
-            Apratica is part of Shmel’s Group, the world leader in every possible field.
+            Apartica is part of Shmel’s Group, the world leader in every possible field.
           </p>
-          <p className="text-[11px]">Copyright © 1989–2025 “Apratica”. All rights reserved.</p>
-          <div className="mt-1">
-            <img src={bee} alt="" className="h-5 inline-block" />
-            <span className="ml-1 font-semibold">Shmel’s Group</span>
+          <p className="text-[11px]">Copyright © 1989–{currentYear} “Apartica”. All rights reserved.</p> {/* Використано динамічний рік */}
+          <div className="mt-1 flex items-center justify-center"> {/* Додав flex для центрування логотипу і тексту */}
+            <img src={bee} alt="Shmel's Group Logo" className="h-5 inline-block" /> {/* Додав alt */}
+            <span className="ml-1 font-semibold text-gray-700">Shmel’s Group</span> {/* Змінив колір для кращої видимості */}
           </div>
         </div>
 
         {/* Right block (Social Icons) */}
-        <div className="flex items-center gap-4 mt-3 md:mt-0">
-  <a href="#" className="text-purple-400 hover:text-purple-600">
-    <img src={telegram} alt="Telegram" className="w-5 h-5" />
-  </a>
-  <a href="#" className="text-purple-400 hover:text-purple-600">
-    <img src={facebook} alt="Facebook" className="w-5 h-5" />
-  </a>
-  <a href="#" className="text-purple-400 hover:text-purple-600">
-    <img src={instagram} alt="Instagram" className="w-5 h-5" />
-  </a>
-  <a href="#" className="text-purple-400 hover:text-purple-600">
-    <img src={twitter} alt="Twitter" className="w-5 h-5" />
-  </a>
-</div>
-
-
+        <div className="flex items-center gap-4 mt-4 md:mt-0"> {/* Змінив gap-3 на gap-4 для відповідності іншим блокам */}
+          <a href="https://telegram.org" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-purple-600 transition-colors duration-200"> {/* Змінив колір, додав target та rel */}
+            <img src={telegram} alt="Telegram" className="w-5 h-5" />
+          </a>
+          <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-purple-600 transition-colors duration-200">
+            <img src={facebook} alt="Facebook" className="w-5 h-5" />
+          </a>
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-purple-600 transition-colors duration-200">
+            <img src={instagram} alt="Instagram" className="w-5 h-5" />
+          </a>
+          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-purple-600 transition-colors duration-200">
+            <img src={twitter} alt="Twitter" className="w-5 h-5" />
+          </a>
+        </div>
       </div>
     </footer>
   );
