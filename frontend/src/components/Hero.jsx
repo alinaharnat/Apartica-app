@@ -1,171 +1,220 @@
 import React, { useState } from 'react';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { format } from 'date-fns';
+import enGB from 'date-fns/locale/en-GB';
+import cn from 'classnames';
 import hotel from '../assets/hotel1.jpg';
+import 'react-datepicker/dist/react-datepicker.css';
+
+registerLocale('en-GB', enGB);
 
 const Hero = () => {
-    const [destination, setDestination] = useState('');
-    const [checkIn, setCheckIn] = useState('');
-    const [checkOut, setCheckOut] = useState('');
-    const [guests, setGuests] = useState('');
-    const [errors, setErrors] = useState({});
+  const [destination, setDestination] = useState('');
+  const [checkIn, setCheckIn] = useState(null);
+  const [checkOut, setCheckOut] = useState(null);
+  const [guests, setGuests] = useState('');
+  const [errors, setErrors] = useState({});
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        // Валідація
-        const newErrors = {};
-        if (!destination.trim()) newErrors.destination = 'Please enter destination';
-        if (!checkIn) newErrors.checkIn = 'Please select check-in date';
-        else if (new Date(checkIn) < today) newErrors.checkIn = 'Check-in date cannot be in the past';
-        if (!checkOut) newErrors.checkOut = 'Please select check-out date';
-        else if (new Date(checkOut) < today) newErrors.checkOut = 'Check-out date cannot be in the past';
-        if (checkIn && checkOut && new Date(checkOut) <= new Date(checkIn)) newErrors.checkOut = 'Check-out date must be after check-in date';
-        if (!guests || guests < 1) newErrors.guests = 'Please add at least one guest';
-        setErrors(newErrors);
-    };
+  /* -------- helpers -------- */
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const newErrors = {};
 
-    const handleChange = (field, value) => {
-        switch (field) {
-            case 'destination':
-                setDestination(value);
-                if (errors.destination) setErrors(prev => { const { destination, ...rest } = prev; return rest; });
-                break;
-            case 'checkIn':
-                setCheckIn(value);
-                if (errors.checkIn || errors.checkOut) setErrors(prev => { const { checkIn, checkOut, ...rest } = prev; return rest; });
-                break;
-            case 'checkOut':
-                setCheckOut(value);
-                if (errors.checkOut) setErrors(prev => { const { checkOut, ...rest } = prev; return rest; });
-                break;
-            case 'guests':
-                setGuests(value);
-                if (errors.guests) setErrors(prev => { const { guests, ...rest } = prev; return rest; });
-                break;
-            default:
-                break;
-        }
-    };
+    if (!destination.trim()) newErrors.destination = 'Please enter destination';
 
-    return (
-        <div className="relative w-full h-screen">
-            {/* Картинка на весь екран */}
-            <img
-                src={hotel}
-                alt="Hotel"
-                className="absolute top-0 left-0 w-full h-full object-cover"
-            />
+    if (checkIn || checkOut) {
+      if (!checkIn) newErrors.checkIn = 'Please select check-in';
+      if (!checkOut) newErrors.checkOut = 'Please select check-out';
+    }
+    if (checkIn && checkIn < today) newErrors.checkIn = 'Check-in in the past';
+    if (checkOut && checkOut < today) newErrors.checkOut = 'Check-out in the past';
+    if (checkIn && checkOut && checkOut <= checkIn)
+      newErrors.checkOut = 'Check-out must be after check-in';
 
-            {/* Напівпрозорий шар для кращої читабельності */}
-            <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-40"></div>
+    if (!guests || guests < 1) newErrors.guests = 'Add at least one guest';
 
-            {/* Контент поверх картинки */}
-            <div className="relative z-10 flex flex-col items-center justify-between h-full px-6 md:px-16 lg:px-24 xl:px-32 py-16">
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length === 0) {
+      /* …відправляємо… */
+      console.log({ destination, checkIn, checkOut, guests });
+    }
+  };
 
-                {/* Форма приблизно посередині картинки (вертикально) */}
-                <form
-                    noValidate
-                    onSubmit={handleSubmit}
-                    className="bg-[#FCF7F3] bg-opacity-90 rounded-full px-6 py-3 flex items-center gap-6 max-w-[900px] w-full shadow-md"
-                    style={{ marginTop: 'auto', marginBottom: 'auto' }}
-                >
-                    {/* Поля форми */}
-                    <div className="flex flex-col">
-                        <label className="text-xs text-gray-700 font-semibold">Where</label>
-                        <input
-                            list="destinations"
-                            id="destinationInput"
-                            type="text"
-                            placeholder="Search destinations"
-                            className={`bg-transparent placeholder:text-gray-400 text-black outline-none text-sm w-36 md:w-48 ${errors.destination ? 'border border-red-500 rounded' : ''
-                                }`}
-                            value={destination}
-                            onChange={(e) => handleChange('destination', e.target.value)}
-                        />
-                        {errors.destination && (
-                            <span className="text-red-500 text-xs mt-1">{errors.destination}</span>
-                        )}
-                        <datalist id="destinations">
-                            <option value="New York" />
-                            <option value="Paris" />
-                            <option value="Tokyo" />
-                            <option value="London" />
-                        </datalist>
-                    </div>
-
-                    <div className="flex flex-col border-l border-gray-300 pl-6">
-                        <label className="text-xs text-gray-700 font-semibold">Check in</label>
-                        <input
-                            id="checkIn"
-                            type="date"
-                            className={`bg-transparent placeholder:text-gray-400 text-black outline-none text-sm w-28 ${errors.checkIn ? 'border border-red-500 rounded' : ''
-                                }`}
-                            value={checkIn}
-                            min={new Date().toISOString().split('T')[0]}
-                            onChange={(e) => handleChange('checkIn', e.target.value)}
-                        />
-                        {errors.checkIn && (
-                            <span className="text-red-500 text-xs mt-1">{errors.checkIn}</span>
-                        )}
-                    </div>
-
-                    <div className="flex flex-col border-l border-gray-300 pl-6">
-                        <label className="text-xs text-gray-700 font-semibold">Check out</label>
-                        <input
-                            id="checkOut"
-                            type="date"
-                            className={`bg-transparent placeholder:text-gray-400 text-black outline-none text-sm w-28 ${errors.checkOut ? 'border border-red-500 rounded' : ''
-                                }`}
-                            min={checkIn || new Date().toISOString().split('T')[0]}
-                            value={checkOut}
-                            onChange={(e) => handleChange('checkOut', e.target.value)}
-                        />
-                        {errors.checkOut && (
-                            <span className="text-red-500 text-xs mt-1">{errors.checkOut}</span>
-                        )}
-                    </div>
-
-                    <div className="flex flex-col border-l border-gray-300 pl-6">
-                        <label className="text-xs text-gray-700 font-semibold">Who</label>
-                        <input
-                            min={1}
-                            max={10}
-                            id="guests"
-                            type="number"
-                            placeholder="Add guests"
-                            className={`bg-transparent placeholder:text-gray-400 text-black outline-none text-sm w-20 ${errors.guests ? 'border border-red-500 rounded' : ''
-                                }`}
-                            value={guests}
-                            onChange={(e) => handleChange('guests', e.target.value)}
-                        />
-                        {errors.guests && (
-                            <span className="text-red-500 text-xs mt-1">{errors.guests}</span>
-                        )}
-                    </div>
-
-                    <button
-                        type="submit"
-                        className="ml-auto bg-[#8252A1] hover:bg-purple-800 transition-colors rounded-full p-3 flex items-center justify-center"
-                    >
-                        <svg
-                            className="w-5 h-5 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-3.5-3.5M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </button>
-                </form>
-
-                {/* Текст знизу картинки */}
-                <h1 className="text-white text-basic font-bold mt-12">Your ideal hotel stay is just a few clicks away!</h1>
-            </div>
-        </div>
+  /* -------- date-picker classes -------- */
+  const dateInputCls = (error) =>
+    cn(
+      'bg-transparent outline-none text-sm placeholder:text-gray-400 w-28 sm:w-32 md:w-36',
+      error && 'border border-red-500 rounded'
     );
+
+  return (
+    <div className="relative w-full h-screen">
+      {/* bg image */}
+      <img
+        src={hotel}
+        alt="Hotel"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-black/40" />
+
+      {/* content */}
+      <div className="relative z-10 flex flex-col items-center h-full px-4 md:px-10 lg:px-16 py-10">
+        {/* SEARCH FORM */}
+        <form
+          noValidate
+          onSubmit={handleSubmit}
+          className="bg-[#FCF7F3]/90 rounded-2xl md:rounded-full shadow-md flex flex-wrap sm:flex-nowrap gap-x-6 gap-y-4 items-center w-full max-w-[900px] px-6 py-4"
+          style={{ marginBlock: 'auto' }}
+        >
+          {/* DESTINATION */}
+          <div className="flex flex-col flex-1 min-w-[140px]">
+            <label className="text-xs font-semibold text-gray-700">Where</label>
+            <input
+              list="destinations"
+              placeholder="Search destination"
+              className={cn(
+                'bg-transparent outline-none text-sm placeholder:text-gray-400',
+                errors.destination && 'border border-red-500 rounded'
+              )}
+              value={destination}
+              onChange={(e) => {
+                setDestination(e.target.value);
+                setErrors((p) => ({ ...p, destination: undefined }));
+              }}
+            />
+            {errors.destination && (
+              <span className="text-red-500 text-xs">{errors.destination}</span>
+            )}
+            <datalist id="destinations">
+              <option value="New York" />
+              <option value="Paris" />
+              <option value="Tokyo" />
+              <option value="London" />
+            </datalist>
+          </div>
+
+          {/* CHECK-IN */}
+          <div className="flex flex-col border-l border-gray-300 pl-6">
+            <label className="text-xs font-semibold text-gray-700">Check in</label>
+            <DatePicker
+              selected={checkIn}
+              onChange={(date) => {
+                setCheckIn(date);
+                if (date && checkOut && date >= checkOut) setCheckOut(null);
+                setErrors((p) => ({ ...p, checkIn: undefined, checkOut: undefined }));
+              }}
+              dateFormat="dd.MM.yyyy"
+              placeholderText="Add date"
+              minDate={today}
+              locale="en-GB"
+              className={dateInputCls(errors.checkIn)}
+              popperPlacement="bottom-start"
+              wrapperClassName="w-full"
+              dayClassName={(d) =>
+                cn(
+                  'react-datepicker__day',
+                  checkIn &&
+                    checkOut &&
+                    d >= checkIn &&
+                    d <= checkOut &&
+                    'bg-[#8252A1] text-white rounded-full',
+                  d.getTime() === checkIn?.getTime() && 'bg-[#8252A1] text-white'
+                )
+              }
+            />
+            {errors.checkIn && (
+              <span className="text-red-500 text-xs">{errors.checkIn}</span>
+            )}
+          </div>
+
+          {/* CHECK-OUT */}
+          <div className="flex flex-col border-l border-gray-300 pl-6">
+            <label className="text-xs font-semibold text-gray-700">Check out</label>
+            <DatePicker
+              selected={checkOut}
+              onChange={(date) => {
+                setCheckOut(date);
+                setErrors((p) => ({ ...p, checkOut: undefined }));
+              }}
+              dateFormat="dd.MM.yyyy"
+              placeholderText="Add date"
+              minDate={checkIn || today}
+              locale="en-GB"
+              className={dateInputCls(errors.checkOut)}
+              popperPlacement="bottom-start"
+              wrapperClassName="w-full"
+              dayClassName={(d) =>
+                cn(
+                  'react-datepicker__day',
+                  checkIn &&
+                    checkOut &&
+                    d >= checkIn &&
+                    d <= checkOut &&
+                    'bg-[#8252A1] text-white rounded-full',
+                  d.getTime() === checkOut?.getTime() && 'bg-[#8252A1] text-white'
+                )
+              }
+            />
+            {errors.checkOut && (
+              <span className="text-red-500 text-xs">{errors.checkOut}</span>
+            )}
+          </div>
+
+          {/* GUESTS */}
+          <div className="flex flex-col border-l border-gray-300 pl-6">
+            <label className="text-xs font-semibold text-gray-700">Who</label>
+            <input
+              type="number"
+              min={1}
+              max={10}
+              placeholder="Add guests"
+              className={cn(
+                'bg-transparent outline-none text-sm placeholder:text-gray-400 w-20',
+                errors.guests && 'border border-red-500 rounded'
+              )}
+              value={guests}
+              onChange={(e) => {
+                setGuests(e.target.value);
+                setErrors((p) => ({ ...p, guests: undefined }));
+              }}
+            />
+            {errors.guests && (
+              <span className="text-red-500 text-xs">{errors.guests}</span>
+            )}
+          </div>
+
+          {/* SUBMIT */}
+          <button
+            type="submit"
+            className="ml-auto bg-[#8252A1] hover:bg-purple-800 transition-colors rounded-full p-3"
+          >
+            <svg
+              className="w-5 h-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-3.5-3.5M17 10a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </button>
+        </form>
+
+        {/* tagline */}
+        <h1 className="text-white font-bold mt-10 text-center text-base sm:text-lg">
+          Your ideal hotel stay is just a few clicks away!
+        </h1>
+      </div>
+    </div>
+  );
 };
 
 export default Hero;

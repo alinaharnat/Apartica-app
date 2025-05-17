@@ -3,15 +3,15 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 function PopularCities() {
   const [cities, setCities] = useState([]);
-  const [error, setError] = useState(null);
+  const [error,  setError] = useState(null);
 
-
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  // прапорці для видимості стрілок
+  const [canScrollLeft,  setCanScrollLeft]  = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
   const scrollContainerRef = useRef(null);
 
-
+  /* -------- helpers -------- */
   const updateScrollButtons = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
@@ -21,13 +21,12 @@ function PopularCities() {
     setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
   }, []);
 
-  const scrollByPx = (px) => {
+  const scrollByPx = (px) =>
     scrollContainerRef.current?.scrollBy({ left: px, behavior: 'smooth' });
-  };
 
-
+  /* -------- fetch -------- */
   useEffect(() => {
-    const fetchCities = async () => {
+    (async () => {
       try {
         const res = await fetch('http://localhost:5000/api/popular-cities');
         if (!res.ok) throw new Error('Network response was not ok');
@@ -36,17 +35,16 @@ function PopularCities() {
       } catch (e) {
         setError(e.message);
       }
-    };
-    fetchCities();
+    })();
   }, []);
 
+  /* перерахунок після завантаження списку */
   useEffect(() => updateScrollButtons(), [cities, updateScrollButtons]);
 
-
+  /* слухаємо прокрутку */
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
-
     el.addEventListener('scroll', updateScrollButtons, { passive: true });
     return () => el.removeEventListener('scroll', updateScrollButtons);
   }, [updateScrollButtons]);
@@ -58,6 +56,7 @@ function PopularCities() {
     <div className="p-6 relative">
       <h1 className="text-3xl font-bold mb-6 text-center">Популярні міста</h1>
 
+      {/* -------- ліва стрілка -------- */}
       {canScrollLeft && (
         <button
           onClick={() => scrollByPx(-300)}
@@ -67,7 +66,7 @@ function PopularCities() {
         </button>
       )}
 
-   
+      {/* -------- права стрілка -------- */}
       {canScrollRight && (
         <button
           onClick={() => scrollByPx(300)}
@@ -77,7 +76,7 @@ function PopularCities() {
         </button>
       )}
 
-     
+      {/* -------- горизонтальний скрол -------- */}
       <div
         ref={scrollContainerRef}
         className="flex space-x-4 overflow-x-scroll scrollbar-hide scroll-smooth pb-4"
@@ -96,10 +95,15 @@ function PopularCities() {
               alt={city.name}
               className="w-full h-48 object-cover rounded-t-lg"
             />
+
+            {/* ---- підписи ---- */}
             <div className="p-4">
-              <h2 className="text-xl font-semibold mb-2">{city.name}</h2>
-              <p className="text-gray-600">Країна: {city.country}</p>
-              <p className="text-gray-600">Обʼєктів: {city.propertyCount}</p>
+              <h2 className="font-semibold text-lg leading-none mb-1">
+                {city.name}
+              </h2>
+              <p className="text-gray-500 text-sm">
+                {city.propertyCount.toLocaleString('en-US')} properties
+              </p>
             </div>
           </div>
         ))}
