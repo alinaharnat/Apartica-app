@@ -21,8 +21,8 @@ const registerUser = asyncHandler(async (req, res) => {
       user.name = name || user.name;
       user.phoneNumber = phoneNumber || user.phoneNumber;
       user.profilePicture = profilePicture || user.profilePicture;
-      if (!Array.isArray(user.roles) || user.roles.length === 0) {
-        user.roles = ['Renter'];
+      if (!Array.isArray(user.userType) || user.userType.length === 0) {
+        user.userType = ['Renter'];
       }
       await user.save();
       await sendVerificationEmail(user.email, verificationToken, user.name);
@@ -43,7 +43,7 @@ const registerUser = asyncHandler(async (req, res) => {
     name,
     phoneNumber,
     profilePicture: profilePicture || '',
-    roles: ['Renter'],
+    userType: ['Renter'],
     isEmailVerified: false,
   });
 
@@ -131,7 +131,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
       name: user.name,
       displayName: user.displayName,
       email: user.email,
-      roles: user.roles,
+      userType: user.userType,
       isEmailVerified: user.isEmailVerified,
       phoneNumber: user.phoneNumber,
       profilePicture: user.profilePicture,
@@ -154,7 +154,7 @@ const googleCallback = asyncHandler(async (req, res) => {
     name: req.user.name,
     displayName: req.user.displayName,
     email: req.user.email,
-    roles: req.user.roles,
+    userType: req.user.userType,
     isEmailVerified: req.user.isEmailVerified,
     profilePicture: req.user.profilePicture,
     token: token,
