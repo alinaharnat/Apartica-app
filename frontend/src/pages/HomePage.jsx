@@ -5,7 +5,6 @@ import Hero from '../components/Hero';
 import PopularCities from '../components/PopularCities';
 import NewCustomerDiscount from '../components/NewCustomerDiscount';
 
-
 const HomePage = () => {
   const [user, setUser] = useState(null);
 
@@ -21,13 +20,13 @@ const HomePage = () => {
       <Navbar user={user} />
       <Hero />
       <main className="flex-grow p-4 text-center">
-        <h1 className="text-3xl font-bold mb-4">Вітаємо в Apartica</h1>
-        <p>На цій сторінці з’явиться домашній контент</p>
+        <h1 className="text-3xl font-bold mb-4">Welcome to Apartica</h1>
+        <p>Home content will appear on this page</p>
       </main>
-       <div className="mb-10">
+      <div className="mb-10">
         <PopularCities />
-       </div>
-      
+      </div>
+
       <div className="mb-10">
         <NewCustomerDiscount />
       </div>
@@ -35,6 +34,5 @@ const HomePage = () => {
     </div>
   );
 };
-
 
 export default HomePage;

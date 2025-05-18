@@ -1,25 +1,24 @@
 // server.js
 const dotenv = require('dotenv');
 
-// Викликаємо dotenv.config() на самому початку і перевіряємо результат
-const dotenvResult = dotenv.config(); // За замовчуванням шукає .env в поточній директорії
+// Call dotenv.config() at the very beginning and check the result
+const dotenvResult = dotenv.config(); // By default, it looks for .env in the current directory
 
 if (dotenvResult.error) {
-  console.error('!!! ПОМИЛКА завантаження .env файлу !!!', dotenvResult.error);
-  // У випадку помилки завантаження .env, можливо, варто зупинити додаток,
-  // оскільки критично важливі конфігурації можуть бути відсутні.
-  // process.exit(1); // Розкоментуйте, якщо це бажана поведінка
+  console.error('!!! ERROR loading .env file !!!', dotenvResult.error);
+  // If there's an error loading the .env file, it's possible that critical configurations are missing.
+  // process.exit(1); // Uncomment if you want to stop the app in this case
 } else {
-  console.log('>>> .env файл успішно завантажено.');
-  // Розкоментуйте наступний рядок для перегляду завантажених змінних (ТІЛЬКИ ДЛЯ ДІАГНОСТИКИ, не для продакшену!)
-  // console.log('>>> Завантажені змінні з .env:', dotenvResult.parsed);
+  console.log('>>> .env file successfully loaded.');
+  // Uncomment the line below to view the loaded environment variables (FOR DEBUGGING ONLY, NOT FOR PRODUCTION!)
+  // console.log('>>> Loaded variables from .env:', dotenvResult.parsed);
 }
 
-// Решта ваших require'ів та ініціалізацій мають йти ПІСЛЯ dotenv.config()
+// All other requires and initializations should go AFTER dotenv.config()
 const app = require('./app');
 const connectDB = require('./config/connectDB');
 
-// connectDB() тепер може безпечно використовувати process.env.MONGODB_URI
+// connectDB() can now safely use process.env.MONGODB_URI
 connectDB();
 
 const PORT = process.env.PORT || 5000;
