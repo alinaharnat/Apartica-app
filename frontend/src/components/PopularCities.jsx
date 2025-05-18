@@ -50,11 +50,11 @@ function PopularCities() {
   }, [updateScrollButtons]);
 
   if (error)
-    return <div className="text-red-500 text-center mt-4">Помилка: {error}</div>;
+    return <div className="text-red-500 text-center mt-4">Error: {error}</div>;
 
   return (
     <div className="p-6 relative">
-      <h1 className="text-3xl font-bold mb-6 text-center">Популярні міста</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">Popular cities</h1>
 
       {/* -------- ліва стрілка -------- */}
       {canScrollLeft && (
