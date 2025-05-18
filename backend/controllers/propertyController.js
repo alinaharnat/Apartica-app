@@ -8,7 +8,9 @@ const City = require('../models/city');
 const Country = require('../models/country');
 const PropertyType = require('../models/propertyType');
 const User = require('../models/user');
+const Amenity = require('../models/amenity');
 const HouseRuleOption = require('../models/houseRuleOption');
+const HouseRuleCategory = require('../models/houseRuleCategory');
 
 // @desc    Create a new property with rooms and photos
 // @route   POST /api/properties
@@ -146,35 +148,82 @@ const getProperties = asyncHandler(async (req, res) => {
 const getPropertyById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const property = await Property.findById(id)
-    .populate({
-      path: 'cityId',
-      populate: { path: 'countryId', model: 'Country' },
-    })
-    .populate('propertyType')
-    .populate('amenities')
-    .populate({ path: 'rules', populate: { path: 'categoryId' } })
-    .populate('ownerId', 'firstName lastName email');
+  try {
+    const property = await Property.findById(id)
+      .populate({
+        path: 'cityId',
+        populate: { path: 'countryId', model: 'Country' },
+      })
+      .populate('propertyType')
+      .populate('amenities')
+      .populate({
+        path: 'rules',
+        model: 'HouseRuleOption',
+        populate: {
+          path: 'categoryId',
+          model: 'HouseRuleCategory',
+        },
+      })
+      .populate('ownerId', 'firstName lastName email');
 
-  if (!property) {
-    res.status(404);
-    throw new Error('Property not found');
+    if (!property) {
+      res.status(404);
+      throw new Error('Property not found');
+    }
+
+    const rooms = await Room.find({ propertyId: property._id });
+    const propertyPhotos = await Photo.find({ propertyId: property._id });
+
+    const roomsWithPhotos = await Promise.all(
+      rooms.map(async (room) => {
+        const roomPhotos = await Photo.find({ roomId: room._id });
+        return {
+          ...room.toObject(),
+          photos: roomPhotos,
+        };
+      })
+    );
+
+    res.json({
+      _id: property._id,
+      title: property.title,
+      description: property.description,
+      address: property.address,
+      city: {
+        name: property.cityId?.name,
+        country: property.cityId?.countryId?.name,
+      },
+      propertyType: property.propertyType || null,
+      amenities: (property.amenities || []).filter(Boolean),
+      rules: (property.rules || []).filter(Boolean).map(rule => ({
+        _id: rule._id,
+        value: rule.value,
+        category: rule.categoryId ? {
+          _id: rule.categoryId._id,
+          name: rule.categoryId.name
+        } : null
+      })),
+      owner: property.ownerId || null,
+      photos: propertyPhotos.map(p => ({
+        url: p.url,
+        filename: p.filename,
+      })),
+      rooms: roomsWithPhotos.map(room => ({
+        _id: room._id,
+        bedrooms: room.bedrooms,
+        bathrooms: room.bathrooms,
+        maxGuests: room.maxGuests,
+        pricePerNight: room.pricePerNight,
+        photos: room.photos.map(p => ({
+          url: p.url,
+          filename: p.filename,
+        })),
+      })),
+    });
+  } catch (error) {
+    console.error('getPropertyById error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-
-  const rooms = await Room.find({ propertyId: property._id });
-  const propertyPhotos = await Photo.find({ propertyId: property._id });
-  const roomsWithPhotos = await Promise.all(
-    rooms.map(async (room) => {
-      const roomPhotos = await Photo.find({ roomId: room._id });
-      return { ...room.toObject(), photos: roomPhotos };
-    })
-  );
-
-  res.json({
-    ...property.toObject(),
-    photos: propertyPhotos,
-    rooms: roomsWithPhotos,
-  });
 });
 
 module.exports = {
