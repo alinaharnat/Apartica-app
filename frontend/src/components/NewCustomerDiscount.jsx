@@ -2,33 +2,49 @@ import React from 'react';
 import discountImg from '../assets/save-money.png';
 
 const NewCustomerDiscount = () => {
-    return (
-        <div
-            className="relative bg-white rounded-2xl p-4 flex items-center gap-4 mx-auto shadow-md"
-            style={{ height: '130px', width: '100vw', maxWidth: '1200px', paddingLeft: '12px', paddingRight: '12px' }}
-        >
-            <div className="flex flex-col items-start justify-center flex-1 h-full">
-                <h2 className="text-base font-bold text-gray-900 mb-1">
-                    Register and save money
-                </h2>
+  return (
+    <div className="w-full flex justify-center px-3">
+      <div
+        className="
+          relative w-full max-w-[1200px] bg-white shadow-md rounded-2xl
+          flex flex-col sm:flex-row items-center sm:items-start gap-4
+          py-4 px-4 sm:py-5 sm:px-6
+        "
+      >
+        <div className="flex flex-col sm:flex-1 items-start">
+          <h2 className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 mb-1">
+            Register and save money
+          </h2>
 
-                <p className="text-gray-600 text-xs mb-3 max-w-full whitespace-nowrap overflow-hidden text-ellipsis">
-                    Save 10% at your first booking – register now and receive a discount as a new customer
-                </p>
+          <p className="
+              text-gray-600 text-xs sm:text-sm lg:text-base
+              mb-3 sm:mb-4
+              sm:max-w-none max-w-full overflow-hidden text-ellipsis
+            ">
+            Save&nbsp;10% at your first booking – register now and receive a discount as a new customer
+          </p>
 
-                <button className="bg-[#8252A1] hover:bg-purple-800 transition-colors text-white font-semibold text-xs px-4 py-1 rounded-full">
-                    Register now!
-                </button>
-            </div>
-
-            <img
-                src={discountImg}
-                alt="Bee"
-                className="object-contain flex-shrink-0"
-                style={{ height: '90px', width: 'auto' }}
-            />
+          <button className="
+              bg-[#8252A1] hover:bg-purple-800 transition-colors
+              text-white font-semibold
+              text-xs sm:text-sm lg:text-base
+              px-4 py-1.5 rounded-full
+            ">
+            Register now!
+          </button>
         </div>
-    );
+
+        <img
+          src={discountImg}
+          alt="Save money"
+          className="
+            flex-shrink-0 object-contain
+            h-20 sm:h-[90px] lg:h-[100px] w-auto
+          "
+        />
+      </div>
+    </div>
+  );
 };
 
 export default NewCustomerDiscount;
