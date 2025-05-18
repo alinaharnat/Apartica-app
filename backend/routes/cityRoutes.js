@@ -31,5 +31,30 @@ router.get('/popular-cities', async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+router.get('/cities/search', async (req, res) => {
+  const query = req.query.q;
+
+  if (!query || query.trim().length < 2) {
+    return res.json([]);
+  }
+
+  try {
+    const regex = new RegExp(query, 'i');
+
+    const cities = await City.find({ name: regex }).limit(10).populate('countryId');
+
+    const results = cities.map(city => ({
+      id: city._id,
+      name: city.name,
+      country: city.countryId?.name || 'Unknown',
+    }));
+
+    res.json(results);
+  } catch (err) {
+    console.error('City search error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 
 module.exports = router;

@@ -36,7 +36,7 @@ const HomePage = () => {
         <PopularCities />
       </div>
       <div className="mb-10">
-        <NewCustomerDiscount />
+          {!user && <NewCustomerDiscount />}
       </div>
       <Footer />
     </div>
