@@ -8,19 +8,23 @@ import ListPropertyPage from './pages/ListPropertyPage';
 import AddPropertyPage from './pages/AddPropertyPage';
 import RulesPage from './pages/RulesPage'; // <-- Імпорт нової сторінки
 import AuthSuccess from './components/AuthSuccess';
+import ProfilePage from './pages/ProfilePage';
+import BookingsPage from './pages/BookingsPage';
 import './index.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <Router>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/list-your-property" element={<ListPropertyPage />} />
-        <Route path="/add-property" element={<AddPropertyPage />} />
-        <Route path="/rules" element={<RulesPage />} /> {/* <-- Новий маршрут */}
-        <Route path="/auth-success" element={<AuthSuccess />} />
-      </Routes>
-    </Router>
+      <Router>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/list-your-property" element={<ListPropertyPage />} />
+          <Route path="/add-property" element={<AddPropertyPage />} />
+          <Route path="/rules" element={<RulesPage />} />
+          <Route path="/auth-success" element={<AuthSuccess />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/bookings" element={<BookingsPage />} />
+        </Routes>
+      </Router>
   </StrictMode>,
 )

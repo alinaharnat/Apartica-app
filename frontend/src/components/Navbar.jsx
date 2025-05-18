@@ -7,7 +7,8 @@ const Navbar = ({ user, hideAuthLinks = false }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
-
+   
+  
     const staticLinks = [
         { name: 'Home', path: '/' },
         { name: 'List your property', path: '/list-your-property' },
@@ -93,7 +94,7 @@ const Navbar = ({ user, hideAuthLinks = false }) => {
                     {isDropdownOpen && (
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg overflow-hidden z-50">
                           <Link
-                            to="/account"
+                            to="/profile"
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                           >
                               <span>👤</span> My account
