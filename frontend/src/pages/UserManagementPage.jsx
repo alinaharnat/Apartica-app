@@ -64,7 +64,7 @@ const UserManagementPage = () => {
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Navbar user={user} onLogout={handleLogout} />
 
-      <main className="flex-grow p-6 md:p-12">
+      <main className="flex-grow pt-28 px-6 md:px-12">
         <h1 className="text-3xl font-bold mb-6 text-center">User Management</h1>
 
         {loading ? (

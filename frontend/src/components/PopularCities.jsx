@@ -86,15 +86,11 @@ function PopularCities() {
             key={city._id}
             className="min-w-[250px] bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow flex-shrink-0"
           >
-            <img
-              src={
-                city.imageUrl.startsWith('http')
-                  ? city.imageUrl
-                  : `http://localhost:5000${city.imageUrl}`
-              }
-              alt={city.name}
-              className="w-full h-48 object-cover rounded-t-lg"
-            />
+          <img
+            src={city.imageUrl}
+            alt={city.name}
+            className="w-full h-48 object-cover rounded-t-lg"
+          />
 
             {/* ---- підписи ---- */}
             <div className="p-4">
