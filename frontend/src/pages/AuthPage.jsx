@@ -128,8 +128,8 @@ const AuthPage = () => {
         throw new Error(data.message || 'Помилка підтвердження коду');
       }
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data)); // Зберігаємо всю інформацію про користувача
-      setUser(data);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user); // ✅ Це передається в Navbar
       setMessage({ type: 'success', text: data.message || 'Вхід успішний!' });
       // Затримка перед перенаправленням, щоб користувач побачив повідомлення
       setTimeout(() => {

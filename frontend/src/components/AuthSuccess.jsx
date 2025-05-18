@@ -6,28 +6,27 @@ const AuthSuccess = () => {
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
-    const token = query.get('token');
+    const userData = query.get('userData');
 
-    console.log("TOKEN:", token);
-
-    if (token) {
-      localStorage.setItem('token', token);
-
-      fetch('http://localhost:5000/api/user/me', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-        .then(res => res.json())
-        .then(user => {
-          localStorage.setItem('user', JSON.stringify(user));
-          navigate('/');
-        })
-        .catch(err => {
-          console.error(err);
-          console.error("AUTH ERROR:", err);
-          navigate('/login?error=auth_failed');
-        });
+    if (userData) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(userData));
+        localStorage.setItem('token', parsed.token);
+        localStorage.setItem('user', JSON.stringify({
+          _id: parsed._id,
+          userId: parsed.userId,
+          name: parsed.name,
+          displayName: parsed.displayName,
+          email: parsed.email,
+          roles: parsed.roles,
+          isEmailVerified: parsed.isEmailVerified,
+          profilePicture: parsed.profilePicture,
+        }));
+        navigate('/');
+      } catch (err) {
+        console.error("AUTH ERROR:", err);
+        navigate('/auth?mode=login&error=google_parse_failed');
+      }
     } else {
       navigate('/');
     }
