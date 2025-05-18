@@ -7,6 +7,8 @@ const Photo = require('../models/photo');
 const City = require('../models/city');
 const Country = require('../models/country');
 const PropertyType = require('../models/propertyType');
+const User = require('../models/user');
+const HouseRuleOption = require('../models/houseRuleOption');
 
 // @desc    Create a new property with rooms and photos
 // @route   POST /api/properties
@@ -20,7 +22,7 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     address,
     propertyTypeName,
     amenityIds: amenityIdsString,
-    ruleIds: ruleIdsString,
+    ruleOptionIds: ruleOptionIdsString,
   } = req.body;
 
   const ownerId = req.user._id;
@@ -30,13 +32,19 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     throw new Error('User is not authorized to list properties.');
   }
 
+  const owner = await User.findById(ownerId);
+  if (!owner) {
+    res.status(404);
+    throw new Error('Owner not found');
+  }
+
   let amenityIds = [];
-  let ruleIds = [];
+  let ruleOptionIds = [];
   const roomsData = [];
 
   try {
     if (amenityIdsString) amenityIds = JSON.parse(amenityIdsString);
-    if (ruleIdsString) ruleIds = JSON.parse(ruleIdsString);
+    if (ruleOptionIdsString) ruleOptionIds = JSON.parse(ruleOptionIdsString);
 
     let roomIndex = 0;
     while (req.body[`rooms[${roomIndex}][numBedrooms]`] !== undefined) {
@@ -58,42 +66,14 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     throw new Error('Please fill all required property fields and add at least one room.');
   }
 
-  for (const room of roomsData) {
-    if (
-      room.numBedrooms === undefined ||
-      room.numBathrooms === undefined ||
-      room.maxGuests === undefined ||
-      room.pricePerNight === undefined
-    ) {
-      res.status(400);
-      throw new Error('All rooms must have number of bedrooms, bathrooms, max guests, and price per night.');
-    }
-  }
-
   const countryDoc = await Country.findOne({ name: countryName });
-  if (!countryDoc) {
-    res.status(400);
-    throw new Error(`Country '${countryName}' not found.`);
-  }
+  if (!countryDoc) throw new Error(`Country '${countryName}' not found.`);
 
   const cityDoc = await City.findOne({ name: cityName, countryId: countryDoc._id });
-  if (!cityDoc) {
-    res.status(400);
-    throw new Error(`City '${cityName}' in country '${countryName}' not found.`);
-  }
+  if (!cityDoc) throw new Error(`City '${cityName}' in country '${countryName}' not found.`);
 
   const propertyTypeDoc = await PropertyType.findOne({ name: propertyTypeName });
-  if (!propertyTypeDoc) {
-    res.status(400);
-    throw new Error(`Property type '${propertyTypeName}' not found.`);
-  }
-
-  const validAmenityIds = Array.isArray(amenityIds)
-    ? amenityIds.filter(id => mongoose.Types.ObjectId.isValid(id))
-    : [];
-  const validRuleIds = Array.isArray(ruleIds)
-    ? ruleIds.filter(id => mongoose.Types.ObjectId.isValid(id))
-    : [];
+  if (!propertyTypeDoc) throw new Error(`Property type '${propertyTypeName}' not found.`);
 
   const property = new Property({
     title,
@@ -101,9 +81,9 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     address,
     cityId: cityDoc._id,
     ownerId,
-    amenities: validAmenityIds,
-    rules: validRuleIds,
-    propertyType: propertyTypeDoc._id, // <=== зміна тут
+    amenities: amenityIds,
+    rules: ruleOptionIds,
+    propertyType: propertyTypeDoc._id,
     isListed: true,
   });
 
@@ -150,50 +130,50 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get all listed properties
-// @route   GET /api/properties
-// @access  Public
+// @desc Get all properties
 const getProperties = asyncHandler(async (req, res) => {
   const properties = await Property.find({ isListed: true })
     .populate('cityId', 'name')
     .populate('propertyType', 'name')
     .populate('amenities', 'name')
-    .populate('rules', 'name');
+    .populate({ path: 'rules', populate: { path: 'categoryId', model: 'HouseRuleCategory' } })
+    .populate('ownerId', 'firstName lastName');
 
   res.status(200).json(properties);
 });
 
-// @desc    Get property by ID
-// @route   GET /api/properties/:id
-// @access  Public
+// @desc Get property by ID
 const getPropertyById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    res.status(400);
-    throw new Error('Invalid property ID.');
-  }
-
   const property = await Property.findById(id)
-    .populate('cityId', 'name')
-    .populate('propertyType', 'name')
-    .populate('amenities', 'name')
-    .populate('rules', 'name');
+    .populate({
+      path: 'cityId',
+      populate: { path: 'countryId', model: 'Country' },
+    })
+    .populate('propertyType')
+    .populate('amenities')
+    .populate({ path: 'rules', populate: { path: 'categoryId' } })
+    .populate('ownerId', 'firstName lastName email');
 
   if (!property) {
     res.status(404);
-    throw new Error('Property not found.');
+    throw new Error('Property not found');
   }
 
-  const rooms = await Room.find({ propertyId: id });
-  const propertyPhotos = await Photo.find({ propertyId: id });
-  const roomPhotos = await Photo.find({ roomId: { $in: rooms.map(r => r._id) } });
+  const rooms = await Room.find({ propertyId: property._id });
+  const propertyPhotos = await Photo.find({ propertyId: property._id });
+  const roomsWithPhotos = await Promise.all(
+    rooms.map(async (room) => {
+      const roomPhotos = await Photo.find({ roomId: room._id });
+      return { ...room.toObject(), photos: roomPhotos };
+    })
+  );
 
-  res.status(200).json({
+  res.json({
     ...property.toObject(),
-    rooms,
     photos: propertyPhotos,
-    roomPhotos,
+    rooms: roomsWithPhotos,
   });
 });
 

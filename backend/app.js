@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const cityRoutes = require('./routes/cityRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const propertyRoutes = require('./routes/propertyRoutes');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 // dotenv.config(); // Прибираємо цей рядок, оскільки .env завантажується в server.js
@@ -28,6 +29,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api', cityRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/properties', propertyRoutes);
 // Health check route
 app.get('/', (req, res) => {
   res.send('API works');

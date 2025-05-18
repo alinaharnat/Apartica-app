@@ -1,3 +1,5 @@
+const { generateUserId } = require('../utilits/generateId');
+
 const User = require('../models/user');
 const asyncHandler = require('express-async-handler');
 
@@ -34,9 +36,8 @@ const createUser = asyncHandler(async (req, res) => {
     throw new Error('User already exists');
   }
 
-  const newUserId = await generateUserId();
   const user = await User.create({
-    userId: newUserId,
+    userId: await generateUserId(),
     email,
     name,
     phoneNumber,
@@ -97,7 +98,7 @@ const deleteUser = asyncHandler(async (req, res) => {
     throw new Error('You cannot delete your own account');
   }
 
-  await user.remove();
+  await user.deleteOne();
   res.status(200).json({ message: 'User removed successfully' });
 });
 

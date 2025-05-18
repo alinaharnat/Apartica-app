@@ -36,7 +36,7 @@ const propertySchema = new Schema({
   }],
   rules: [{
     type: Schema.Types.ObjectId,
-    ref: 'HouseRuleCategory',
+    ref: 'HouseRuleOption',
   }],
   propertyType: { // ← Замість масиву типів
     type: Schema.Types.ObjectId,
