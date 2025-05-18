@@ -10,8 +10,11 @@ const Navbar = ({ user, hideAuthLinks = false }) => {
    
   
     const staticLinks = [
-        { name: 'Home', path: '/' },
-        { name: 'List your property', path: '/list-your-property' },
+      { name: 'Home', path: '/' },
+      // Показувати "List your property", лише якщо користувач не адміністратор
+      ...(user?.userType?.includes('Administrator') ? [] : [
+        { name: 'List your property', path: '/list-your-property' }
+      ])
     ];
 
     const handleLogout = () => {
@@ -99,12 +102,14 @@ const Navbar = ({ user, hideAuthLinks = false }) => {
                           >
                               <span>👤</span> My account
                           </Link>
-                          <Link
-                            to="/bookings"
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                          >
+                          {!user?.userType?.includes('Administrator') && (
+                            <Link
+                              to="/bookings"
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
                               <span>🛏️</span> My bookings
-                          </Link>
+                            </Link>
+                          )}
                           <button
                             onClick={handleLogout}
                             className="w-full text-left px-4 py-2 text-sm text-white bg-purple-300 hover:bg-purple-400"

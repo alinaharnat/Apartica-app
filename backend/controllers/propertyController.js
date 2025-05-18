@@ -25,7 +25,7 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
 
   const ownerId = req.user._id;
 
-  if (!req.user.roles || !req.user.roles.includes('PropertyOwner')) {
+  if (!req.user.userType || !req.user.userType.includes('PropertyOwner')) {
     res.status(403);
     throw new Error('User is not authorized to list properties.');
   }

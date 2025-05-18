@@ -35,9 +35,10 @@ const userSchema = mongoose.Schema(
       default: false
     },
     userType: {
-      type: String,
+      type: [String], // Масив рядків
       enum: ['Renter', 'PropertyOwner', 'Administrator', 'Moderator'],
-      default: 'Renter'
+      default: ['Renter'],
+      required: true,
     },
     googleId: {
       type: String,

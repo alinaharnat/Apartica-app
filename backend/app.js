@@ -6,6 +6,7 @@ const passport = require('passport');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const cityRoutes = require('./routes/cityRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 // dotenv.config(); // Прибираємо цей рядок, оскільки .env завантажується в server.js
@@ -26,6 +27,7 @@ require('./config/passport')(passport); // passport.js також може ви�
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api', cityRoutes);
+app.use('/api/admin', adminRoutes);
 // Health check route
 app.get('/', (req, res) => {
   res.send('API works');
