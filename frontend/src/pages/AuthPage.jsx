@@ -74,11 +74,11 @@ const AuthPage = () => {
 
       if (!response.ok) {
         // Спробуємо отримати більш детальне повідомлення про помилку від бекенду
-        const errorText = data.message || (data.errors && data.errors.map(err => err.msg).join(', ')) || 'Помилка реєстрації';
+        const errorText = data.message || (data.errors && data.errors.map(err => err.msg).join(', ')) || 'Registration error';
         throw new Error(errorText);
       }
       setEmailForVerification(formData.email); // Зберігаємо email для відображення
-      setMessage({ type: 'success', text: data.message || 'Код підтвердження надіслано! Перевірте пошту.' });
+      setMessage({ type: 'success', text: data.message || 'Verification code sent! Check your email.' });
       setView('verify'); // Переключаємо на сторінку верифікації
       navigate('/auth?mode=verify'); // Оновлюємо URL
     } catch (error) {
@@ -100,10 +100,10 @@ const AuthPage = () => {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || 'Помилка запиту коду для входу');
+        throw new Error(data.message || 'Error requesting login code');
       }
       setEmailForVerification(loginEmail); // Зберігаємо email для відображення
-      setMessage({ type: 'success', text: data.message || 'Код для входу надіслано!' });
+      setMessage({ type: 'success', text: data.message || 'Login code sent!' });
       setView('verify');
       navigate('/auth?mode=verify');
     } catch (error) {
@@ -125,12 +125,12 @@ const AuthPage = () => {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || 'Помилка підтвердження коду');
+        throw new Error(data.message || 'Code verification error');
       }
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       setUser(data.user); // ✅ Це передається в Navbar
-      setMessage({ type: 'success', text: data.message || 'Вхід успішний!' });
+      setMessage({ type: 'success', text: data.message || 'Login successful!' });
       // Затримка перед перенаправленням, щоб користувач побачив повідомлення
       setTimeout(() => {
         navigate('/'); // Перенаправлення на головну сторінку
@@ -159,7 +159,7 @@ const AuthPage = () => {
         <Navbar user={user} />
         <main className="flex-grow flex items-center justify-center px-4 pt-32 pb-12">
           <div className="max-w-md w-full bg-white shadow-xl rounded-lg px-8 py-10 text-center">
-            <h2 className="text-2xl font-semibold mb-4">Ви увійшли як {user.name}</h2>
+            <h2 className="text-2xl font-semibold mb-4">You are logged in as {user.name}</h2>
             {message && (
               <div className={`p-3 mb-4 rounded text-sm ${message.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                 {message.text}
@@ -174,7 +174,7 @@ const AuthPage = () => {
               }}
               className="w-full bg-purple-600 text-white py-3 rounded hover:bg-purple-700 text-lg mt-4"
             >
-              Вийти
+              Siqn out
             </button>
           </div>
         </main>

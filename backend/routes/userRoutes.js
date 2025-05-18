@@ -15,7 +15,7 @@ router.patch('/me', protect, async (req, res) => {
     res.json(updatedUser);
   } catch (err) {
     console.error('PATCH /me error:', err);
-    res.status(500).json({ message: 'Помилка при оновленні користувача' });
+    res.status(500).json({ message: 'Error updating user' });
   }
 });
 

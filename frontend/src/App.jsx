@@ -48,11 +48,11 @@ const App = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Помилка реєстрації');
+        throw new Error(data.message || 'Registration error');
       }
 
       setEmail(formData.email);
-      setMessage({ type: 'success', text: 'Код підтвердження надіслано! Перевірте пошту.' });
+      setMessage({ type: 'success', text: 'Verification code sent! Check your email.' });
       setView('verify');
     } catch (error) {
       setMessage({ type: 'error', text: error.message });
@@ -77,10 +77,10 @@ const App = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Помилка входу');
+        throw new Error(data.message || 'Login error');
       }
 
-      setMessage({ type: 'success', text: 'Код підтвердження надіслано! Перевірте пошту.' });
+      setMessage({ type: 'success', text: 'Verification code sent! Check your email.' });
       setView('verify');
     } catch (error) {
       setMessage({ type: 'error', text: error.message });
@@ -105,14 +105,14 @@ const App = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Помилка перевірки коду');
+        throw new Error(data.message || 'Code validation error');
       }
 
       // Зберігаємо дані користувача
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data));
       setUser(data);
-      setMessage({ type: 'success', text: 'Вхід успішний!' });
+      setMessage({ type: 'success', text: 'Login successful!' });
     } catch (error) {
       setMessage({ type: 'error', text: error.message });
     } finally {
