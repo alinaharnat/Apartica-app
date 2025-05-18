@@ -38,10 +38,11 @@ const propertySchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'HouseRuleCategory',
   }],
-  propertyTypes: [{
+  propertyType: { // ← Замість масиву типів
     type: Schema.Types.ObjectId,
     ref: 'PropertyType',
-  }],
+    required: true,
+  },
   averageRating: {
     type: Number,
     default: 0,
