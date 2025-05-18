@@ -10,6 +10,7 @@ import RulesPage from './pages/RulesPage'; // <-- Імпорт нової сто
 import AuthSuccess from './components/AuthSuccess';
 import ProfilePage from './pages/ProfilePage';
 import BookingsPage from './pages/BookingsPage';
+import PropertyPage from './pages/PropertyPage';
 import './index.css';
 
 createRoot(document.getElementById('root')).render(
@@ -24,6 +25,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="/auth-success" element={<AuthSuccess />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/bookings" element={<BookingsPage />} />
+          <Route path="/properties/:id" element={<PropertyPage />} />
         </Routes>
       </Router>
   </StrictMode>,
