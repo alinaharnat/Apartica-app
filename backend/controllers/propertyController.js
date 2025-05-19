@@ -194,6 +194,7 @@ const getPropertyById = asyncHandler(async (req, res) => {
         country: property.cityId?.countryId?.name,
       },
       propertyType: property.propertyType || null,
+      averageRating: property.averageRating,
       amenities: (property.amenities || []).filter(Boolean),
       rules: (property.rules || []).filter(Boolean).map(rule => ({
         _id: rule._id,
