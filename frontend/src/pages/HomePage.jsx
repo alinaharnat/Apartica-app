@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import Hero from '../components/Hero';
 import PopularCities from '../components/PopularCities';
 import NewCustomerDiscount from '../components/NewCustomerDiscount';
+import HotelCard from '../components/HotelCard';
 
 const HomePage = () => {
   const [user, setUser] = useState(null);
@@ -35,9 +36,11 @@ const HomePage = () => {
       <div className="mb-10">
         <PopularCities />
       </div>
+      <HotelCard/>
       <div className="mb-10">
           {!user && <NewCustomerDiscount />}
       </div>
+  
       <Footer />
     </div>
   );
