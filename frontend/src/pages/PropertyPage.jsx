@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import GalleryModal from '../components/GalleryModal';
+{/*import GalleryModal from '../components/GalleryModal';*/}
 
 const fallbackImage = '../../public/fallback.jpg';
 
