@@ -33,7 +33,6 @@ const reviewSchema = new Schema({
 
 reviewSchema.index({ propertyId: 1 });
 reviewSchema.index({ userId: 1 });
-reviewSchema.index({ bookingId: 1 });
 
 reviewSchema.post('save', async function() {
   await this.constructor.updateAverageRating(this.propertyId);

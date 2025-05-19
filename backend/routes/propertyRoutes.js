@@ -11,4 +11,8 @@ router.post('/', propertyController.createPropertyWithRooms);
 // Отримання списку всіх помешкань
 router.get('/', propertyController.getProperties);
 
+// Додаткові маршрути
+router.get('/:id/available-rooms', propertyController.getAvailableRooms);
+router.get('/:id/unavailable-dates', propertyController.getUnavailableDates);
+
 module.exports = router;

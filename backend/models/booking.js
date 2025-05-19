@@ -3,11 +3,6 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const bookingSchema = new Schema({
-  propertyId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Property',
-    required: true,
-  },
   roomId: {
     type: Schema.Types.ObjectId,
     ref: 'Room',
@@ -30,10 +25,6 @@ const bookingSchema = new Schema({
     type: Number,
     required: true,
     min: 0,
-  },
-  paymentId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Payment',
   },
   status: {
     type: String,

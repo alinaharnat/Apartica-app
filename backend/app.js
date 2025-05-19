@@ -24,6 +24,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use(passport.initialize());
 require('./config/passport')(passport); // passport.js також може використовувати process.env
 
+app.get('/api/config/google-maps-key', (req, res) => {
+  if (!process.env.GOOGLE_MAPS_API_KEY) {
+    console.error('GOOGLE_MAPS_API_KEY is not defined');
+    return res.status(500).json({ error: 'Google Maps API key is not configured' });
+  }
+  res.json({ key: process.env.GOOGLE_MAPS_API_KEY });
+});
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);

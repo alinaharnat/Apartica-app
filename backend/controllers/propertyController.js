@@ -1,4 +1,3 @@
-// controllers/propertyController.js
 const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 const Property = require('../models/property');
@@ -11,6 +10,8 @@ const User = require('../models/user');
 const Amenity = require('../models/amenity');
 const HouseRuleOption = require('../models/houseRuleOption');
 const HouseRuleCategory = require('../models/houseRuleCategory');
+const Booking = require('../models/booking');
+const Review = require('../models/review');
 
 // @desc    Create a new property with rooms and photos
 // @route   POST /api/properties
@@ -51,8 +52,8 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     let roomIndex = 0;
     while (req.body[`rooms[${roomIndex}][numBedrooms]`] !== undefined) {
       roomsData.push({
-        numBedrooms: parseInt(req.body[`rooms[${roomIndex}][numBedrooms]`], 10),
-        numBathrooms: parseInt(req.body[`rooms[${roomIndex}][numBathrooms]`], 10),
+        bedrooms: parseInt(req.body[`rooms[${roomIndex}][numBedrooms]`], 10),
+        bathrooms: parseInt(req.body[`rooms[${roomIndex}][numBathrooms]`], 10),
         maxGuests: parseInt(req.body[`rooms[${roomIndex}][maxGuests]`], 10),
         pricePerNight: parseFloat(req.body[`rooms[${roomIndex}][pricePerNight]`]),
       });
@@ -81,6 +82,7 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     title,
     description,
     address,
+    location: { latitude: parseFloat(req.body.latitude) || 0, longitude: parseFloat(req.body.longitude) || 0 },
     cityId: cityDoc._id,
     ownerId,
     amenities: amenityIds,
@@ -106,8 +108,8 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     const roomData = roomsData[i];
     const room = new Room({
       propertyId: createdProperty._id,
-      bedrooms: roomData.numBedrooms,
-      bathrooms: roomData.numBathrooms,
+      bedrooms: roomData.bedrooms,
+      bathrooms: roomData.bathrooms,
       maxGuests: roomData.maxGuests,
       pricePerNight: roomData.pricePerNight,
     });
@@ -144,7 +146,7 @@ const getProperties = asyncHandler(async (req, res) => {
   res.status(200).json(properties);
 });
 
-// @desc Get property by ID
+// @desc Get property by ID with additional data
 const getPropertyById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -159,10 +161,7 @@ const getPropertyById = asyncHandler(async (req, res) => {
       .populate({
         path: 'rules',
         model: 'HouseRuleOption',
-        populate: {
-          path: 'categoryId',
-          model: 'HouseRuleCategory',
-        },
+        populate: { path: 'categoryId', model: 'HouseRuleCategory' },
       })
       .populate('ownerId', 'firstName lastName email');
 
@@ -173,14 +172,14 @@ const getPropertyById = asyncHandler(async (req, res) => {
 
     const rooms = await Room.find({ propertyId: property._id });
     const propertyPhotos = await Photo.find({ propertyId: property._id });
+    const reviews = await Review.find({ propertyId: id })
+      .populate('userId', 'displayName')
+      .select('userId comment overallRating');
 
     const roomsWithPhotos = await Promise.all(
       rooms.map(async (room) => {
         const roomPhotos = await Photo.find({ roomId: room._id });
-        return {
-          ...room.toObject(),
-          photos: roomPhotos,
-        };
+        return { ...room.toObject(), photos: roomPhotos };
       })
     );
 
@@ -189,9 +188,10 @@ const getPropertyById = asyncHandler(async (req, res) => {
       title: property.title,
       description: property.description,
       address: property.address,
+      location: property.location,
       city: {
         name: property.cityId?.name,
-        country: property.cityId?.countryId?.name,
+        country: property.cityId?.countryId ? { name: property.cityId.countryId.name } : null,
       },
       propertyType: property.propertyType || null,
       averageRating: property.averageRating,
@@ -199,26 +199,24 @@ const getPropertyById = asyncHandler(async (req, res) => {
       rules: (property.rules || []).filter(Boolean).map(rule => ({
         _id: rule._id,
         value: rule.value,
-        category: rule.categoryId ? {
-          _id: rule.categoryId._id,
-          name: rule.categoryId.name
-        } : null
+        category: rule.categoryId ? { _id: rule.categoryId._id, name: rule.categoryId.name } : null,
       })),
       owner: property.ownerId || null,
-      photos: propertyPhotos.map(p => ({
-        url: p.url,
-        filename: p.filename,
+      photos: propertyPhotos.map(p => ({ url: p.url, filename: p.filename })),
+      rooms: roomsWithPhotos.map(r => ({
+        _id: r._id,
+        bedrooms: r.bedrooms,
+        bathrooms: r.bathrooms,
+        maxGuests: r.maxGuests,
+        pricePerNight: r.pricePerNight,
+        photos: r.photos.map(p => ({ url: p.url, filename: p.filename })),
       })),
-      rooms: roomsWithPhotos.map(room => ({
-        _id: room._id,
-        bedrooms: room.bedrooms,
-        bathrooms: room.bathrooms,
-        maxGuests: room.maxGuests,
-        pricePerNight: room.pricePerNight,
-        photos: room.photos.map(p => ({
-          url: p.url,
-          filename: p.filename,
-        })),
+      reviews: reviews.map(review => ({
+        _id: review._id,
+        userId: review.userId._id,
+        userDisplayName: review.userId.displayName || 'Anonymous',
+        comment: review.comment,
+        rating: review.overallRating,
       })),
     });
   } catch (error) {
@@ -227,8 +225,88 @@ const getPropertyById = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc Get available rooms based on dates and guests
+// @route GET /api/properties/:id/available-rooms
+const getAvailableRooms = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { startDate, endDate, guests } = req.query;
+
+  if (!startDate || !endDate || !guests) {
+    res.status(400);
+    throw new Error('Missing startDate, endDate, or guests query parameters');
+  }
+
+  try {
+    const property = await Property.findById(id);
+    if (!property) {
+      res.status(404);
+      throw new Error('Property not found');
+    }
+
+    const rooms = await Room.find({ propertyId: id, maxGuests: { $gte: parseInt(guests) } });
+    const bookings = await Booking.find({
+      roomId: { $in: rooms.map(room => room._id) },
+      status: { $in: ['pending', 'confirmed'] }, // Оновлено: лише pending і confirmed
+      $or: [
+        { checkIn: { $lte: new Date(endDate) }, checkOut: { $gte: new Date(startDate) } },
+      ],
+    });
+
+    const unavailableRoomIds = bookings.map(booking => booking.roomId.toString());
+    const availableRooms = rooms.filter(room => !unavailableRoomIds.includes(room._id.toString()));
+
+    const roomsWithPhotos = await Promise.all(
+      availableRooms.map(async (room) => {
+        const roomPhotos = await Photo.find({ roomId: room._id });
+        return { ...room.toObject(), photos: roomPhotos };
+      })
+    );
+
+    res.json(roomsWithPhotos);
+  } catch (error) {
+    console.error('getAvailableRooms error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// @desc Get unavailable dates for a property
+// @route GET /api/properties/:id/unavailable-dates
+const getUnavailableDates = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const property = await Property.findById(id);
+    if (!property) {
+      res.status(404);
+      throw new Error('Property not found');
+    }
+
+    const rooms = await Room.find({ propertyId: id });
+    const bookings = await Booking.find({
+      roomId: { $in: rooms.map(room => room._id) },
+      status: { $in: ['pending', 'confirmed'] },
+    }).select('checkIn checkOut');
+
+    const unavailableDates = bookings.reduce((acc, booking) => {
+      const start = new Date(booking.checkIn);
+      const end = new Date(booking.checkOut);
+      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+        acc.add(d.toISOString().split('T')[0]);
+      }
+      return acc;
+    }, new Set());
+
+    res.json(Array.from(unavailableDates));
+  } catch (error) {
+    console.error('getUnavailableDates error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = {
   createPropertyWithRooms,
   getProperties,
   getPropertyById,
+  getAvailableRooms,
+  getUnavailableDates,
 };
