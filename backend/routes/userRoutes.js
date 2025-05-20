@@ -3,6 +3,17 @@ const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
 const User = require('../models/user');
 
+router.get('/renters', protect, async (req, res) => {
+  try {
+    const renters = await User.find({ userType: 'Renter' })
+      .select('-password -emailVerificationToken -emailVerificationTokenExpires');
+    res.json(renters);
+  } catch (err) {
+    console.error('GET /renters error:', err);
+    res.status(500).json({ message: 'Error fetching renters' });
+  }
+});
+
 router.get('/me', protect, (req, res) => {
   res.json(req.user);
 });

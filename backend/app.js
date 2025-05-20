@@ -9,7 +9,7 @@ const cityRoutes = require('./routes/cityRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const propertyRoutes = require('./routes/propertyRoutes');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
-
+const propertyTypeRoutes = require('./routes/propertyTypeRoutes');
 // dotenv.config(); // Прибираємо цей рядок, оскільки .env завантажується в server.js
 
 const app = express();
@@ -37,6 +37,7 @@ app.use('/api/user', userRoutes);
 app.use('/api', cityRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/properties', propertyRoutes);
+app.use('/api/property-types', propertyTypeRoutes);
 // Health check route
 app.get('/', (req, res) => {
   res.send('API works');

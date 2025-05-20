@@ -57,4 +57,13 @@ router.get('/cities/search', async (req, res) => {
 });
 
 
+router.get('/cities', async (req, res) => {
+  try {
+    const cities = await City.find().populate('countryId');
+    res.json(cities);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 module.exports = router;

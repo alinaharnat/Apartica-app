@@ -1,7 +1,9 @@
 const { generateUserId } = require('../utilits/generateId');
-
 const User = require('../models/user');
 const asyncHandler = require('express-async-handler');
+const Property = require('../models/property');
+const Booking = require('../models/booking');
+const Room = require('../models/room');
 
 // Получить всех пользователей
 const getAllUsers = asyncHandler(async (req, res) => {
@@ -64,7 +66,6 @@ const updateUser = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
 
-  // Обновляем только разрешенные поля
   user.name = req.body.name || user.name;
   user.email = req.body.email || user.email;
   user.phoneNumber = req.body.phoneNumber || user.phoneNumber;
@@ -92,7 +93,6 @@ const deleteUser = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
 
-  // Не позволяем администратору удалять самого себя
   if (user._id.toString() === req.user._id.toString()) {
     res.status(400);
     throw new Error('You cannot delete your own account');
@@ -102,10 +102,134 @@ const deleteUser = asyncHandler(async (req, res) => {
   res.status(200).json({ message: 'User removed successfully' });
 });
 
+// Получить все свойства (для админа)
+const getAdminProperties = asyncHandler(async (req, res) => {
+  const properties = await Property.find({})
+    .populate('cityId')
+    .populate('propertyType')
+    .populate('amenities')
+    .populate('ownerId');
+  res.json(properties);
+});
+
+const updateProperty = asyncHandler(async (req, res) => {
+  const property = await Property.findById(req.params.id);
+
+  if (!property) {
+    res.status(404);
+    throw new Error('Property not found');
+  }
+
+  // Обновляем только разрешенные поля
+  property.title = req.body.title || property.title;
+  property.description = req.body.description || property.description;
+  property.address = req.body.address || property.address;
+  property.cityId = req.body.cityId || property.cityId; // Добавлено редактирование города
+  property.propertyType = req.body.propertyType || property.propertyType;
+  property.isListed = req.body.isListed !== undefined ? req.body.isListed : property.isListed;
+
+  // Явно оставляем прежние значения для нередактируемых полей
+  property.amenities = property.amenities; // Оставляем исходное значение
+  property.rules = property.rules; // Оставляем исходное значение
+
+  const updatedProperty = await property.save();
+  
+  // Возвращаем обновленные данные с populate
+  const populatedProperty = await Property.findById(updatedProperty._id)
+    .populate('cityId') // Город будет в ответе
+    .populate('propertyType')
+    .populate('amenities')
+    .populate('ownerId');
+
+  res.status(200).json(populatedProperty);
+});
+
+const deleteProperty = asyncHandler(async (req, res) => {
+  const property = await Property.findById(req.params.id);
+
+  if (!property) {
+    res.status(404);
+    throw new Error('Property not found');
+  }
+
+  await property.deleteOne();
+
+  res.status(200).json({ message: 'Property deleted successfully' });
+});
+
+
+const getAdminBookings = asyncHandler(async (req, res) => {
+  const bookings = await Booking.find({})
+    .populate('renterId');
+  res.status(200).json(bookings);
+});
+
+
+const getBookingById = asyncHandler(async (req, res) => {
+  const booking = await Booking.findById(req.params.id)
+    .populate('renterId');
+
+  if (!booking) {
+    res.status(404);
+    throw new Error('Booking not found');
+  }
+
+  res.status(200).json(booking);
+});
+
+const updateBooking = asyncHandler(async (req, res) => {
+  const booking = await Booking.findById(req.params.id);
+
+  if (!booking) {
+    res.status(404);
+    throw new Error('Booking not found');
+  }
+
+  booking.status = req.body.status || booking.status;
+  booking.checkIn = req.body.checkIn || booking.checkIn;
+  booking.checkOut = req.body.checkOut || booking.checkOut;
+  booking.totalPrice = req.body.totalPrice || booking.totalPrice;
+  booking.numberOfGuests = req.body.numberOfGuests || booking.numberOfGuests;
+
+  const updated = await booking.save();
+
+  const populated = await Booking.findById(updated._id)
+    .populate('renterId');
+
+  res.status(200).json(populated);
+});
+
+
+const deleteBooking = asyncHandler(async (req, res) => {
+  const booking = await Booking.findById(req.params.id);
+
+  if (!booking) {
+    res.status(404);
+    throw new Error('Booking not found');
+  }
+
+  await booking.deleteOne();
+  res.status(200).json({ message: 'Booking deleted successfully' });
+});
+
+// Отримати всіх орендарів
+const getAdminRenters = asyncHandler(async (req, res) => {
+  const renters = await User.find({ userType: 'Renter' }).select('-password');
+  res.status(200).json(renters);
+});
+
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  getAdminProperties,
+  updateProperty,
+  deleteProperty,
+  getAdminBookings,     // ← нове
+  getBookingById,       // ← нове
+  updateBooking,        // ← нове
+  deleteBooking,
+  getAdminRenters
 };

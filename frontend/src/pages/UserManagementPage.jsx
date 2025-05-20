@@ -344,7 +344,7 @@ const UserManagementPage = () => {
                 {['Renter', 'PropertyOwner', 'Administrator', 'Moderator'].map((role) => (
                   <label key={role} className="inline-flex items-center mr-6 mb-2">
                     <input
-                      type="checkbox"
+                      type="radio"
                       name="userType"
                       value={role}
                       checked={formData.userType.includes(role)}
