@@ -174,7 +174,7 @@ const getPropertyById = asyncHandler(async (req, res) => {
     const propertyPhotos = await Photo.find({ propertyId: property._id });
     const reviews = await Review.find({ propertyId: id })
       .populate('userId', 'displayName')
-      .select('userId comment overallRating');
+      .select('userId comment overallRating createdAt');
 
     const roomsWithPhotos = await Promise.all(
       rooms.map(async (room) => {
@@ -217,6 +217,7 @@ const getPropertyById = asyncHandler(async (req, res) => {
         userDisplayName: review.userId.displayName || 'Anonymous',
         comment: review.comment,
         rating: review.overallRating,
+        createdAt: review.createdAt, // Додаємо createdAt
       })),
     });
   } catch (error) {

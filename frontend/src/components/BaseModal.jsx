@@ -1,4 +1,3 @@
-// src/components/BaseModal.jsx
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -27,15 +26,16 @@ const BaseModal = ({ isOpen, onClose, children }) => {
       >
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold z-60"
           aria-label="Close"
+          style={{ zIndex: 60 }}
         >
-          &times;
+          ×
         </button>
-        {children}
+        <div className="pt-12 pb-4 px-4">{children}</div> {/* Додаємо відступ зверху */}
       </div>
     </div>,
-    document.getElementById('modal-root') // обов'язково додай div у index.html
+    document.getElementById('modal-root')
   );
 };
 
