@@ -13,6 +13,8 @@ import BookingsPage from './pages/BookingsPage';
 import AdminHomePage from './pages/AdminHomePage';
 import UserManagementPage from './pages/UserManagementPage';
 import PropertyPage from './pages/PropertyPage';
+import BookingPage from './pages/BookingPage';
+import PaymentStatusPage from './pages/PaymentStatusPage';
 import PropertyManagementPage from './pages/PropertyManagementPage';
 import BookingManagementPage from './pages/BookingManagementPage';
 import './index.css';
@@ -32,6 +34,8 @@ createRoot(document.getElementById('root')).render(
           <Route path="/admin" element={<AdminHomePage />} />
           <Route path="/admin/users" element={<UserManagementPage />} />
           <Route path="/properties/:id" element={<PropertyPage />} />
+          <Route path="/booking" element={<BookingPage />} />
+          <Route path="/payment-status" element={<PaymentStatusPage />} />
         <Route path="/admin/properties" element={<PropertyManagementPage />} />
         <Route path="/admin/bookings" element={<BookingManagementPage />} />
         </Routes>

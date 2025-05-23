@@ -113,7 +113,11 @@ const PropertyPage = () => {
       alert('Please select a room to reserve.');
       return;
     }
-    if (!user?.phoneNumber || user.phoneNumber.trim() === '' || !user?.dateOfBirth) {
+    if (!user) {
+      alert('You are required to sign in or register on Apartica in order to proceed with booking.');
+      return;
+    }
+    if (!user?.phoneNumber || user.phoneNumber.trim() === '' || !user?.dateOfBirth || !user?.email) {
       alert('Please fill in all necessary profile data to book property on Apartica.');
       return;
     }
@@ -134,7 +138,7 @@ const PropertyPage = () => {
   };
 
   const formatReviewDate = (date) => {
-    const today = new Date('2025-05-20T14:32:00Z'); // Updated to current time
+    const today = new Date(); // Updated to current time
     const reviewDate = new Date(date);
     const diffTime = today - reviewDate;
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));

@@ -41,6 +41,14 @@ const bookingSchema = new Schema({
     type: String,
     required: true,
   },
+  guestEmail: {
+    type: String,
+    required: true,
+  },
+  guestPhoneNumber: {
+    type: String,
+    required: true,
+  },
 }, { timestamps: true });
 
 bookingSchema.index({ propertyId: 1 });
