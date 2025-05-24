@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import GalleryModal from '../components/GalleryModal';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { LoadScript, GoogleMap, Marker } from '@react-google-maps/api';
+import { GoogleMap, Marker } from '@react-google-maps/api';
 import BaseModal from '../components/BaseModal';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -21,38 +21,29 @@ const PropertyPage = () => {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [modalPhotos, setModalPhotos] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
-  const [startDate, setStartDate] = useState(
-    new Date(new Date().setDate(new Date().getDate() + 7))
-  );
-  const [endDate, setEndDate] = useState(
-    new Date(new Date().setDate(new Date().getDate() + 8))
-  );
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date(new Date().setDate(new Date().getDate() + 7));
+    date.setHours(0, 0, 0, 0);
+    return date;
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const date = new Date(new Date().setDate(new Date().getDate() + 8));
+    date.setHours(0, 0, 0, 0);
+    return date;
+  });
   const [guests, setGuests] = useState(1);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [totalPrice, setTotalPrice] = useState(0);
   const [isMapOpen, setIsMapOpen] = useState(false);
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
   const [error, setError] = useState(null);
   const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
+  const mapRef = useRef(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
       setUser(JSON.parse(stored));
     }
-  }, []);
-
-  useEffect(() => {
-    const fetchGoogleMapsKey = async () => {
-      try {
-        const { data } = await axios.get('/api/config/google-maps-key');
-        setGoogleMapsApiKey(data.key);
-      } catch (err) {
-        console.error('Failed to fetch Google Maps API key:', err);
-        setError('Failed to fetch Google Maps API key');
-      }
-    };
-    fetchGoogleMapsKey();
   }, []);
 
   useEffect(() => {
@@ -94,14 +85,32 @@ const PropertyPage = () => {
   }, [id, startDate, endDate, guests]);
 
   useEffect(() => {
-    if (selectedRoom) {
-      const nights = Math.max(0, Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)));
+    if (selectedRoom && endDate > startDate) {
+      const nights = calculateNights(startDate, endDate);
       const price = selectedRoom.pricePerNight * nights;
       setTotalPrice(Number(price.toFixed(2)));
     } else {
       setTotalPrice(0);
     }
   }, [selectedRoom, startDate, endDate]);
+
+  useEffect(() => {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current = null; // Очищаємо екземпляр мапи при демонтуванні
+      }
+    };
+  }, []);
+
+  const calculateNights = (start, end) => {
+    const startCopy = new Date(start);
+    const endCopy = new Date(end);
+    startCopy.setHours(0, 0, 0, 0);
+    endCopy.setHours(0, 0, 0, 0);
+    const diffTime = endCopy - startCopy;
+    const nights = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+    return nights;
+  };
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -138,7 +147,7 @@ const PropertyPage = () => {
   };
 
   const formatReviewDate = (date) => {
-    const today = new Date(); // Updated to current time
+    const today = new Date();
     const reviewDate = new Date(date);
     const diffTime = today - reviewDate;
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -165,14 +174,16 @@ const PropertyPage = () => {
 
   if (loading) return <div className="p-4 text-center">Loading...</div>;
   if (error) return <div className="p-4 text-center text-red-500">{error}</div>;
-  if (!property || !googleMapsApiKey) return <div className="p-4 text-center">Property or API key not found.</div>;
+  if (!property) return <div className="p-4 text-center">Property not found.</div>;
 
   const mapContainerStyle = { width: '100%', height: '100%' };
   const center = property.location && property.location.latitude && property.location.longitude
     ? { lat: property.location.latitude, lng: property.location.longitude }
     : { lat: 0, lng: 0 };
 
-  const nights = Math.max(0, Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)));
+  const nights = selectedRoom && endDate > startDate
+    ? calculateNights(startDate, endDate)
+    : 0;
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-[#FFF8F2]">
@@ -251,7 +262,17 @@ const PropertyPage = () => {
                   <p className="text-xs uppercase text-gray-500">CHECK-IN</p>
                   <DatePicker
                     selected={startDate}
-                    onChange={date => setStartDate(date)}
+                    onChange={date => {
+                      const newDate = new Date(date);
+                      newDate.setHours(0, 0, 0, 0);
+                      setStartDate(newDate);
+                      if (newDate >= endDate) {
+                        const newEndDate = new Date(newDate);
+                        newEndDate.setDate(newEndDate.getDate() + 1);
+                        newEndDate.setHours(0, 0, 0, 0);
+                        setEndDate(newEndDate);
+                      }
+                    }}
                     selectsStart
                     startDate={startDate}
                     endDate={endDate}
@@ -265,11 +286,15 @@ const PropertyPage = () => {
                   <p className="text-xs uppercase text-gray-500">CHECKOUT</p>
                   <DatePicker
                     selected={endDate}
-                    onChange={date => setEndDate(date)}
+                    onChange={date => {
+                      const newDate = new Date(date);
+                      newDate.setHours(0, 0, 0, 0);
+                      setEndDate(newDate || new Date(startDate.getTime() + 24 * 60 * 60 * 1000));
+                    }}
                     selectsEnd
                     startDate={startDate}
                     endDate={endDate}
-                    minDate={startDate}
+                    minDate={new Date(startDate.getTime() + 24 * 60 * 60 * 1000)}
                     className="text-gray-700 cursor-pointer"
                     customInput={<span>{endDate.toLocaleDateString()}</span>}
                   />
@@ -300,19 +325,23 @@ const PropertyPage = () => {
 
             {/* Міні-карта */}
             <div className="w-full h-64">
-              <LoadScript googleMapsApiKey={googleMapsApiKey}>
-                <GoogleMap
-                  mapContainerStyle={mapContainerStyle}
-                  center={center}
-                  zoom={15}
-                  onClick={() => setIsMapOpen(true)}
-                  options={{
-                    disableDefaultUI: true,
-                  }}
-                >
-                  <Marker position={center} />
-                </GoogleMap>
-              </LoadScript>
+              <GoogleMap
+                mapContainerStyle={mapContainerStyle}
+                center={center}
+                zoom={15}
+                onLoad={map => {
+                  mapRef.current = map;
+                }}
+                onUnmount={() => {
+                  mapRef.current = null;
+                }}
+                onClick={() => setIsMapOpen(true)}
+                options={{
+                  disableDefaultUI: true,
+                }}
+              >
+                <Marker position={center} />
+              </GoogleMap>
             </div>
           </div>
         </div>
@@ -322,6 +351,12 @@ const PropertyPage = () => {
             mapContainerStyle={{ width: '100%', height: '500px' }}
             center={center}
             zoom={15}
+            onLoad={map => {
+              mapRef.current = map;
+            }}
+            onUnmount={() => {
+              mapRef.current = null;
+            }}
           >
             <Marker position={center} />
           </GoogleMap>
