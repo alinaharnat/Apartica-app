@@ -4,7 +4,9 @@ const Booking = require('../models/booking');
 const Payment = require('../models/payment');
 const Room = require('../models/room');
 const User = require('../models/user');
+const Property = require('../models/property'); // Додаємо модель Property
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { sendBookingConfirmationEmail } = require('../config/email'); // Імпортуємо новий метод
 
 // @desc Create a booking and initiate payment
 // @route POST /booking/create
@@ -37,6 +39,21 @@ const createBookingWithPayment = asyncHandler(async (req, res) => {
     const room = await Room.findById(roomId);
     if (!room) {
       res.status(404);
+    }
+
+    // Перевірка, чи є активні бронювання на ці дати
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const existingBookings = await Booking.find({
+      roomId: roomId,
+      status: { $in: ['pending', 'confirmed'] }, // Враховуємо бронювання зі статусами 'pending' або 'confirmed'
+      $or: [
+        { checkIn: { $lte: end }, checkOut: { $gte: start } }, // Перетинаються дати
+      ],
+    });
+
+    if (existingBookings.length > 0) {
+      res.status(400);
     }
 
     // Створення сесії оплати через Stripe з усіма даними в метадатах
@@ -143,12 +160,44 @@ const handlePaymentSuccess = asyncHandler(async (req, res) => {
       payment.status = 'completed';
       await payment.save();
 
-      // Оновлення даних користувача
-      await User.findByIdAndUpdate(session.metadata.renterId, {
-        name: session.metadata.guestName,
-        email: session.metadata.guestEmail,
-        phoneNumber: session.metadata.guestPhoneNumber,
-      });
+      // Отримуємо поточного користувача для порівняння email
+      const user = await User.findById(session.metadata.renterId);
+      if (!user) {
+        res.status(404);
+      }
+
+      // Оновлюємо дані користувача лише якщо email збігається або не змінюється
+      const newEmail = session.metadata.guestEmail;
+      if (!user.email || user.email.toLowerCase() === newEmail.toLowerCase()) {
+        await User.findByIdAndUpdate(session.metadata.renterId, {
+          name: session.metadata.guestName,
+          email: newEmail,
+          phoneNumber: session.metadata.guestPhoneNumber,
+        });
+      } else {
+        // Оновлюємо лише name і phoneNumber, якщо email не збігається
+        await User.findByIdAndUpdate(session.metadata.renterId, {
+          name: session.metadata.guestName,
+          phoneNumber: session.metadata.guestPhoneNumber,
+        });
+      }
+
+      // Отримуємо назву помешкання
+      const property = await Property.findById(session.metadata.propertyId);
+      if (!property) {
+        res.status(404);
+      }
+
+      // Надсилаємо лист про успішне бронювання
+      try {
+        await sendBookingConfirmationEmail(
+          session.metadata.guestEmail,
+          session.metadata.guestFullName,
+          property.title
+        );
+      } catch (emailError) {
+        console.error('Failed to send booking confirmation email:', emailError.message);
+      }
 
       res.redirect('http://localhost:5173/payment-status?status=success');
     } else {

@@ -1,44 +1,13 @@
-// src/main.jsx
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import HomePage from './pages/HomePage';
-import AuthPage from './pages/AuthPage';
-import ListPropertyPage from './pages/ListPropertyPage';
-import AddPropertyPage from './pages/AddPropertyPage';
-import RulesPage from './pages/RulesPage'; // <-- Імпорт нової сторінки
-import AuthSuccess from './components/AuthSuccess';
-import ProfilePage from './pages/ProfilePage';
-import BookingsPage from './pages/BookingsPage';
-import AdminHomePage from './pages/AdminHomePage';
-import UserManagementPage from './pages/UserManagementPage';
-import PropertyPage from './pages/PropertyPage';
-import BookingPage from './pages/BookingPage';
-import PaymentStatusPage from './pages/PaymentStatusPage';
-import PropertyManagementPage from './pages/PropertyManagementPage';
-import BookingManagementPage from './pages/BookingManagementPage';
+import { BrowserRouter as Router } from 'react-router-dom';
+import App from './App';
 import './index.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-      <Router>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/list-your-property" element={<ListPropertyPage />} />
-          <Route path="/add-property" element={<AddPropertyPage />} />
-          <Route path="/rules" element={<RulesPage />} />
-          <Route path="/auth-success" element={<AuthSuccess />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/bookings" element={<BookingsPage />} />
-          <Route path="/admin" element={<AdminHomePage />} />
-          <Route path="/admin/users" element={<UserManagementPage />} />
-          <Route path="/properties/:id" element={<PropertyPage />} />
-          <Route path="/booking" element={<BookingPage />} />
-          <Route path="/payment-status" element={<PaymentStatusPage />} />
-        <Route path="/admin/properties" element={<PropertyManagementPage />} />
-        <Route path="/admin/bookings" element={<BookingManagementPage />} />
-        </Routes>
-      </Router>
-  </StrictMode>,
-)
+    <Router>
+      <App />
+    </Router>
+  </StrictMode>
+);
