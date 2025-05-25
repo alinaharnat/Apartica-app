@@ -4,6 +4,7 @@ import enGB from 'date-fns/locale/en-GB';
 import cn from 'classnames';
 import hotel from '../assets/hotel1.jpg';
 import 'react-datepicker/dist/react-datepicker.css';
+import { useNavigate } from 'react-router-dom';
 
 registerLocale('en-GB', enGB);
 
@@ -16,7 +17,7 @@ const Hero = () => {
   const [errors, setErrors]         = useState({});
 
   const today = new Date(); today.setHours(0,0,0,0);
-
+ const navigate = useNavigate();
   /* ---------- helpers ---------- */
   const validate = () => {
     const e = {};
