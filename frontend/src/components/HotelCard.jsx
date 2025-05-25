@@ -1,35 +1,61 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-const HotelCard = () => {
+const HotelCard = ({ searchParams, filters, onHotelClick }) => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const scrollContainerRef = useRef(null);
   const [showLeftButton, setShowLeftButton] = useState(false);
   const [showRightButton, setShowRightButton] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProperties = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/properties?sort=-averageRating&limit=10');
-        console.log('Properties response:', response.data);
+        setError(null);
+  
+        console.log('Filters received:', filters);
+        console.log('Search params received:', searchParams);
+  
+        // Безпечне отримання діапазону цін і рейтингу з дефолтами
+        const minPrice = filters?.priceRange?.[0] ?? 0;
+        const maxPrice = filters?.priceRange?.[1] ?? 10000;
+        const minRating = filters?.reviewScore ?? 0;
+  
+        const queryParams = new URLSearchParams({
+          sort: '-averageRating',
+          limit: 10,
+          minPrice,
+          maxPrice,
+          minRating,
+        });
+  
+        if (searchParams?.location) {
+          queryParams.append('city', searchParams.location);
+        }
+  
+        if (filters?.propertyType && filters.propertyType !== 'all') {
+          queryParams.append('type', filters.propertyType);
+        }
+  
+        const response = await axios.get(`/api/properties?${queryParams.toString()}`);
         const propertiesData = response.data;
-
+  
         if (!propertiesData || propertiesData.length === 0) {
-          setError('No properties found.');
+          setError('No properties found matching your criteria.');
           setLoading(false);
           return;
         }
-
+  
         const propertiesWithPhotos = await Promise.all(
           propertiesData.map(async (property) => {
             try {
               const photoResponse = await axios.get(`/api/photos?propertyId=${property._id}&limit=1`);
-              console.log(`Photo response for ${property._id}:`, photoResponse.data);
-              const photo = photoResponse.data[0];
+              const photo = photoResponse.data?.[0];
               return { ...property, photoUrl: photo?.url || 'https://via.placeholder.com/300x200?text=No+Image' };
             } catch (photoError) {
               console.error(`Error fetching photo for property ${property._id}:`, photoError);
@@ -37,21 +63,29 @@ const HotelCard = () => {
             }
           })
         );
-
+  
         const propertiesWithCity = await Promise.all(
           propertiesWithPhotos.map(async (property) => {
             try {
+              let cityId;
               if (!property.cityId) {
-                console.warn(`No cityId for property ${property._id}:`, property);
                 return { ...property, cityName: 'Unknown City', countryName: 'Unknown Country' };
               }
-              const cityResponse = await axios.get(`/api/cities/${property.cityId}`);
-              console.log(`City response for cityId ${property.cityId}:`, cityResponse.data);
+              if (typeof property.cityId === 'string') {
+                cityId = property.cityId;
+              } else if (typeof property.cityId === 'object' && property.cityId._id) {
+                cityId = property.cityId._id;
+              } else {
+                return { ...property, cityName: 'Unknown City', countryName: 'Unknown Country' };
+              }
+  
+              const cityResponse = await axios.get(`/api/cities/${cityId}`);
               const cityData = cityResponse.data;
+              console.log('City data:', cityData);
               return {
                 ...property,
                 cityName: cityData.name || 'Unknown City',
-                countryName: cityData.country || 'Unknown Country'
+                countryName: cityData.countryId?.name || 'Unknown Country'
               };
             } catch (cityError) {
               console.error(`Error fetching city for property ${property._id}:`, cityError);
@@ -59,7 +93,7 @@ const HotelCard = () => {
             }
           })
         );
-
+  
         setProperties(propertiesWithCity);
       } catch (error) {
         console.error('Error fetching properties:', error);
@@ -68,9 +102,10 @@ const HotelCard = () => {
         setLoading(false);
       }
     };
-
+  
     fetchProperties();
-  }, []);
+  }, [searchParams, filters]);
+  
 
   const handleScroll = () => {
     const container = scrollContainerRef.current;
@@ -120,8 +155,9 @@ const HotelCard = () => {
         {properties.map((property) => (
           <div
             key={property._id}
-            className="flex-none min-w-[300px] max-w-[300px] bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 transform hover:scale-105 hover:shadow-xl"
+            className="flex-none min-w-[300px] max-w-[300px] bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 transform hover:scale-105 hover:shadow-xl cursor-pointer"
             style={{ transformOrigin: 'top' }}
+            onClick={() => navigate(`/properties/${property._id}`)}
           >
             <img
               src={property.photoUrl}

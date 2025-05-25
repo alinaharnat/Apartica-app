@@ -34,4 +34,4 @@ photoSchema.pre('save', function(next) {
   }
 });
 
-module.exports = mongoose.model('Photo', photoSchema);
+module.exports = mongoose.models.Photo || mongoose.model('Photo', photoSchema);

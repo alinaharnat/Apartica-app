@@ -30,8 +30,6 @@ const HomePage = () => {
       <Navbar user={user} />
       <Hero />
       <main className="flex-grow p-4 text-center">
-        <h1 className="text-3xl font-bold mb-4">Welcome to Apartica</h1>
-        <p>Home content will appear on this page</p>
       </main>
       <div className="mb-10">
         <PopularCities />

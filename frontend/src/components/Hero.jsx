@@ -38,8 +38,15 @@ const Hero = () => {
     const v = validate();
     setErrors(v);
     if (!Object.keys(v).length) {
-      // submit…
-      console.log({ destination, checkIn, checkOut, guests });
+      // Формируем параметры для поиска
+      const params = new URLSearchParams();
+      params.append('location', destination);
+      if (checkIn) params.append('checkIn', checkIn.toISOString());
+      if (checkOut) params.append('checkOut', checkOut.toISOString());
+      params.append('guests', guests);
+      
+      // Переходим на страницу результатов
+      navigate(`/search?${params.toString()}`);
     }
   };
 
