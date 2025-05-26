@@ -23,16 +23,30 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     countryName,
     cityName,
     address,
+    latitude,
+    longitude,
     propertyTypeName,
     amenityIds: amenityIdsString,
     ruleOptionIds: ruleOptionIdsString,
+    checkInTime,
+    checkOutTime,
   } = req.body;
+
+  console.log('Received data:', {
+    title,
+    countryName,
+    cityName,
+    propertyTypeName,
+    roomsCount: Object.keys(req.body).filter(key => key.startsWith('rooms[')).length / 4
+  });
 
   const ownerId = req.user._id;
 
-  if (!req.user.userType || !req.user.userType.includes('PropertyOwner')) {
-    res.status(403);
-    throw new Error('User is not authorized to list properties.');
+  // Add PropertyOwner role if user doesn't have it
+  if (!req.user.userType.includes('PropertyOwner')) {
+    await User.findByIdAndUpdate(ownerId, {
+      $addToSet: { userType: 'PropertyOwner' }
+    });
   }
 
   const owner = await User.findById(ownerId);
@@ -50,10 +64,10 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     if (ruleOptionIdsString) ruleOptionIds = JSON.parse(ruleOptionIdsString);
 
     let roomIndex = 0;
-    while (req.body[`rooms[${roomIndex}][numBedrooms]`] !== undefined) {
+    while (req.body[`rooms[${roomIndex}][bedrooms]`] !== undefined) {
       roomsData.push({
-        bedrooms: parseInt(req.body[`rooms[${roomIndex}][numBedrooms]`], 10),
-        bathrooms: parseInt(req.body[`rooms[${roomIndex}][numBathrooms]`], 10),
+        bedrooms: parseInt(req.body[`rooms[${roomIndex}][bedrooms]`], 10),
+        bathrooms: parseInt(req.body[`rooms[${roomIndex}][bathrooms]`], 10),
         maxGuests: parseInt(req.body[`rooms[${roomIndex}][maxGuests]`], 10),
         pricePerNight: parseFloat(req.body[`rooms[${roomIndex}][pricePerNight]`]),
       });
@@ -78,15 +92,60 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
   const propertyTypeDoc = await PropertyType.findOne({ name: propertyTypeName });
   if (!propertyTypeDoc) throw new Error(`Property type '${propertyTypeName}' not found.`);
 
+  // Validate amenities exist
+  if (amenityIds.length > 0) {
+    const validAmenities = await Amenity.find({ _id: { $in: amenityIds } });
+    if (validAmenities.length !== amenityIds.length) {
+      res.status(400);
+      throw new Error('Some amenities are invalid');
+    }
+  }
+
+  // Handle check-in/check-out times as house rules
+  const checkInCategory = await HouseRuleCategory.findOne({ name: 'Check-in/Check-out' });
+  if (!checkInCategory) {
+    res.status(404);
+    throw new Error('Check-in/Check-out category not found');
+  }
+
+  // Create or find check-in/check-out rules
+  let checkInRule = await HouseRuleOption.findOne({ 
+    categoryId: checkInCategory._id, 
+    value: `Check-in: ${checkInTime}` 
+  });
+  if (!checkInRule) {
+    checkInRule = await HouseRuleOption.create({
+      categoryId: checkInCategory._id,
+      value: `Check-in: ${checkInTime}`
+    });
+  }
+
+  let checkOutRule = await HouseRuleOption.findOne({ 
+    categoryId: checkInCategory._id, 
+    value: `Check-out: ${checkOutTime}` 
+  });
+  if (!checkOutRule) {
+    checkOutRule = await HouseRuleOption.create({
+      categoryId: checkInCategory._id,
+      value: `Check-out: ${checkOutTime}`
+    });
+  }
+
+  // Add check-in/check-out to rules
+  const allRuleIds = [...ruleOptionIds, checkInRule._id, checkOutRule._id];
+
   const property = new Property({
     title,
     description,
     address,
-    location: { latitude: parseFloat(req.body.latitude) || 0, longitude: parseFloat(req.body.longitude) || 0 },
+    location: { 
+      latitude: parseFloat(latitude) || 0, 
+      longitude: parseFloat(longitude) || 0 
+    },
     cityId: cityDoc._id,
     ownerId,
     amenities: amenityIds,
-    rules: ruleOptionIds,
+    rules: allRuleIds,
     propertyType: propertyTypeDoc._id,
     isListed: true,
   });
@@ -217,7 +276,7 @@ const getPropertyById = asyncHandler(async (req, res) => {
         userDisplayName: review.userId.displayName || 'Anonymous',
         comment: review.comment,
         rating: review.overallRating,
-        createdAt: review.createdAt, // Додаємо createdAt
+        createdAt: review.createdAt,
       })),
     });
   } catch (error) {
@@ -247,7 +306,7 @@ const getAvailableRooms = asyncHandler(async (req, res) => {
     const rooms = await Room.find({ propertyId: id, maxGuests: { $gte: parseInt(guests) } });
     const bookings = await Booking.find({
       roomId: { $in: rooms.map(room => room._id) },
-      status: { $in: ['pending', 'confirmed'] }, // Оновлено: лише pending і confirmed
+      status: { $in: ['pending', 'confirmed'] },
       $or: [
         { checkIn: { $lte: new Date(endDate) }, checkOut: { $gte: new Date(startDate) } },
       ],

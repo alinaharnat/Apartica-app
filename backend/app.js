@@ -2,36 +2,43 @@
 const express = require('express');
 const cors = require('cors');
 const passport = require('passport');
-// const dotenv = require('dotenv'); // Більше не потрібно тут
+const path = require('path');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const cityRoutes = require('./routes/cityRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const propertyRoutes = require('./routes/propertyRoutes');
-const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const propertyTypeRoutes = require('./routes/propertyTypeRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
-// dotenv.config(); // Прибираємо цей рядок, оскільки .env завантажується в server.js
+const geocodeRoutes = require('./routes/geocodeRoutes');
+const staticDataRoutes = require('./routes/staticDataRoutes');
+const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Тепер FRONTEND_URL має бути доступний
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(passport.initialize());
-require('./config/passport')(passport); // passport.js також може використовувати process.env
+require('./config/passport')(passport);
 
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Google Maps API endpoint
 app.get('/api/config/google-maps-key', (req, res) => {
+  console.log('Google Maps API key requested');
   if (!process.env.GOOGLE_MAPS_API_KEY) {
-    console.error('GOOGLE_MAPS_API_KEY is not defined');
+    console.error('GOOGLE_MAPS_API_KEY is not defined in environment variables');
     return res.status(500).json({ error: 'Google Maps API key is not configured' });
   }
   res.json({ key: process.env.GOOGLE_MAPS_API_KEY });
 });
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
@@ -40,6 +47,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/property-types', propertyTypeRoutes);
 app.use('/api/booking', bookingRoutes);
+app.use('/api/geocode', geocodeRoutes);
+app.use('/api/static', staticDataRoutes);
+
 // Health check route
 app.get('/', (req, res) => {
   res.send('API works');
