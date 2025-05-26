@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Photo = require('../models/рhoto');
+const Photo = require('../models/photo');
 
 // GET /api/photos?propertyId=...&limit=...
 router.get('/', async (req, res) => {

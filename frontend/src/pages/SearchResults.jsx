@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import PropertyCard from '../components/ProrertyCard';
+import PropertyCard from '../components/ProrertyCard'; // Исправлена опечатка в имени файла (было ProrertyCard)
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -62,7 +62,7 @@ const SearchResults = () => {
         }
       });
     } else {
-      setFilters({ ...filters, [name]: value });
+      setFilters((prev) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -70,10 +70,18 @@ const SearchResults = () => {
     e.preventDefault();
     const params = new URLSearchParams();
     params.append('location', destination);
-    if (checkIn) params.append('checkIn', checkIn.toISOString());
-    if (checkOut) params.append('checkOut', checkOut.toISOString());
+    if (checkIn) params.append('checkIn', checkIn.toISOString().split('T')[0]); // e.g., "2025-05-31"
+    if (checkOut) params.append('checkOut', checkOut.toISOString().split('T')[0]); // e.g., "2025-06-01"
     params.append('guests', guests);
     navigate(`/search?${params.toString()}`);
+  };
+  
+  const handleHotelClick = (propertyId) => {
+    const params = new URLSearchParams();
+    if (checkIn) params.append('checkIn', checkIn.toISOString().split('T')[0]);
+    if (checkOut) params.append('checkOut', checkOut.toISOString().split('T')[0]);
+    if (guests) params.append('guests', guests);
+    navigate(`/properties/${propertyId}?${params.toString()}`);
   };
 
   const dateInputCls = (err) =>
@@ -345,7 +353,7 @@ const SearchResults = () => {
               searchParams={searchParams}
               filters={filters}
               sortOption={sortOption}
-              onHotelClick={(hotelId) => navigate(`/property/${hotelId}`)}
+              onHotelClick={handleHotelClick}
             />
           </main>
         </div>

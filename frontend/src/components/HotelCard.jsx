@@ -3,7 +3,7 @@ import axios from 'axios';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const HotelCard = ({ searchParams, filters, onHotelClick }) => {
+const HotelCard = ({ searchParams, filters }) => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,15 +17,11 @@ const HotelCard = ({ searchParams, filters, onHotelClick }) => {
       try {
         setLoading(true);
         setError(null);
-  
-        console.log('Filters received:', filters);
-        console.log('Search params received:', searchParams);
-  
-        // Безпечне отримання діапазону цін і рейтингу з дефолтами
+
         const minPrice = filters?.priceRange?.[0] ?? 0;
         const maxPrice = filters?.priceRange?.[1] ?? 10000;
         const minRating = filters?.reviewScore ?? 0;
-  
+
         const queryParams = new URLSearchParams({
           sort: '-averageRating',
           limit: 10,
@@ -33,68 +29,30 @@ const HotelCard = ({ searchParams, filters, onHotelClick }) => {
           maxPrice,
           minRating,
         });
-  
+
         if (searchParams?.location) {
           queryParams.append('city', searchParams.location);
         }
-  
+
         if (filters?.propertyType && filters.propertyType !== 'all') {
           queryParams.append('type', filters.propertyType);
         }
-  
+
         const response = await axios.get(`/api/properties?${queryParams.toString()}`);
-        const propertiesData = response.data;
-  
+        let propertiesData = response.data;
+
         if (!propertiesData || propertiesData.length === 0) {
           setError('No properties found matching your criteria.');
-          setLoading(false);
           return;
         }
-  
-        const propertiesWithPhotos = await Promise.all(
-          propertiesData.map(async (property) => {
-            try {
-              const photoResponse = await axios.get(`/api/photos?propertyId=${property._id}&limit=1`);
-              const photo = photoResponse.data?.[0];
-              return { ...property, photoUrl: photo?.url || 'https://via.placeholder.com/300x200?text=No+Image' };
-            } catch (photoError) {
-              console.error(`Error fetching photo for property ${property._id}:`, photoError);
-              return { ...property, photoUrl: 'https://via.placeholder.com/300x200?text=No+Image' };
-            }
-          })
-        );
-  
-        const propertiesWithCity = await Promise.all(
-          propertiesWithPhotos.map(async (property) => {
-            try {
-              let cityId;
-              if (!property.cityId) {
-                return { ...property, cityName: 'Unknown City', countryName: 'Unknown Country' };
-              }
-              if (typeof property.cityId === 'string') {
-                cityId = property.cityId;
-              } else if (typeof property.cityId === 'object' && property.cityId._id) {
-                cityId = property.cityId._id;
-              } else {
-                return { ...property, cityName: 'Unknown City', countryName: 'Unknown Country' };
-              }
-  
-              const cityResponse = await axios.get(`/api/cities/${cityId}`);
-              const cityData = cityResponse.data;
-              console.log('City data:', cityData);
-              return {
-                ...property,
-                cityName: cityData.name || 'Unknown City',
-                countryName: cityData.countryId?.name || 'Unknown Country'
-              };
-            } catch (cityError) {
-              console.error(`Error fetching city for property ${property._id}:`, cityError);
-              return { ...property, cityName: 'Unknown City', countryName: 'Unknown Country' };
-            }
-          })
-        );
-  
-        setProperties(propertiesWithCity);
+
+        // Гарантуємо, що фото — масив
+        propertiesData = propertiesData.map(property => ({
+          ...property,
+          photos: Array.isArray(property.photos) ? property.photos : [],
+        }));
+
+        setProperties(propertiesData);
       } catch (error) {
         console.error('Error fetching properties:', error);
         setError('Failed to load properties. Please try again later.');
@@ -102,10 +60,9 @@ const HotelCard = ({ searchParams, filters, onHotelClick }) => {
         setLoading(false);
       }
     };
-  
+
     fetchProperties();
   }, [searchParams, filters]);
-  
 
   const handleScroll = () => {
     const container = scrollContainerRef.current;
@@ -128,22 +85,13 @@ const HotelCard = ({ searchParams, filters, onHotelClick }) => {
     const container = scrollContainerRef.current;
     if (container) {
       container.addEventListener('scroll', handleScroll);
-      handleScroll(); // Initial check
+      handleScroll();
       return () => container.removeEventListener('scroll', handleScroll);
     }
   }, [properties]);
 
-  if (loading) {
-    return <div className="text-center p-4">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center p-4 text-red-600">{error}</div>;
-  }
-
-  if (properties.length === 0) {
-    return <div className="text-center p-4">No properties available at the moment.</div>;
-  }
+  if (loading) return <div className="text-center p-4">Loading...</div>;
+  if (error) return <div className="text-center p-4 text-red-600">{error}</div>;
 
   return (
     <div className="relative p-4">
@@ -156,27 +104,26 @@ const HotelCard = ({ searchParams, filters, onHotelClick }) => {
           <div
             key={property._id}
             className="flex-none min-w-[300px] max-w-[300px] bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 transform hover:scale-105 hover:shadow-xl cursor-pointer"
-            style={{ transformOrigin: 'top' }}
             onClick={() => navigate(`/properties/${property._id}`)}
           >
             <img
-              src={property.photoUrl}
+              src={property.photos[0]?.url || 'https://via.placeholder.com/300x200?text=No+Image'}
               alt={property.title}
               className="w-full h-48 object-cover"
             />
             <div className="p-4">
               <h3 className="text-lg font-semibold line-clamp-2">{property.title}</h3>
               <p className="text-gray-600 text-sm line-clamp-1">
-                {property.cityName}, {property.countryName}
+                {property.cityId?.name || 'Unknown City'}, {property.cityId?.countryId?.name || 'Unknown Country'}
               </p>
               <div className="flex items-center mt-2">
                 <span className="bg-purple-600 text-white text-xs font-semibold px-2.5 py-0.5 rounded">
-                  {property.averageRating.toFixed(1)}
+                  {property.averageRating?.toFixed(1) || 'N/A'}
                 </span>
                 <span className="ml-2 text-sm text-gray-600">Excellent</span>
               </div>
               <p className="mt-2 text-gray-600">
-                Starting from €{Math.round(property.averageRating * 10 + 50)}
+                Starting from €{property.pricePerNight || 'N/A'}
               </p>
             </div>
           </div>
