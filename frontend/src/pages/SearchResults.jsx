@@ -333,7 +333,7 @@ const SearchResults = () => {
           <main className="w-full md:w-3/4">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-xl font-semibold text-gray-800">
-                {searchParams.location}: Over 1,000 places
+                {searchParams.location}
               </h2>
               <div>
                 <label className="text-gray-600 mr-2">Sort by:</label>

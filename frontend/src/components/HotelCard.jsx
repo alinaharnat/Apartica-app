@@ -95,6 +95,7 @@ const HotelCard = ({ searchParams, filters }) => {
 
   return (
     <div className="relative p-4">
+      <h1 className="text-3xl font-bold mb-6 text-center">Homes guests love</h1>
       <div
         ref={scrollContainerRef}
         className="flex overflow-x-scroll space-x-4 scrollbar-hide scroll-smooth"
