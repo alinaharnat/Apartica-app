@@ -4,6 +4,7 @@ import enGB from 'date-fns/locale/en-GB';
 import cn from 'classnames';
 import hotel from '../assets/hotel1.jpg';
 import 'react-datepicker/dist/react-datepicker.css';
+import { useNavigate } from 'react-router-dom';
 
 registerLocale('en-GB', enGB);
 
@@ -16,7 +17,7 @@ const Hero = () => {
   const [errors, setErrors]         = useState({});
 
   const today = new Date(); today.setHours(0,0,0,0);
-
+ const navigate = useNavigate();
   /* ---------- helpers ---------- */
   const validate = () => {
     const e = {};
@@ -38,8 +39,15 @@ const Hero = () => {
     const v = validate();
     setErrors(v);
     if (!Object.keys(v).length) {
-      // submit…
-      console.log({ destination, checkIn, checkOut, guests });
+      // Формируем параметры для поиска
+      const params = new URLSearchParams();
+      params.append('location', destination);
+      if (checkIn) params.append('checkIn', checkIn.toISOString());
+      if (checkOut) params.append('checkOut', checkOut.toISOString());
+      params.append('guests', guests);
+      
+      // Переходим на страницу результатов
+      navigate(`/search?${params.toString()}`);
     }
   };
 

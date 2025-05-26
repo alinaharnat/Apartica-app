@@ -16,6 +16,7 @@ import BookingPage from './pages/BookingPage';
 import PaymentStatusPage from './pages/PaymentStatusPage';
 import PropertyManagementPage from './pages/PropertyManagementPage';
 import BookingManagementPage from './pages/BookingManagementPage';
+import SearchResults from './pages/SearchResults';
 
 const App = () => {
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState(null);
@@ -68,6 +69,7 @@ const App = () => {
         <Route path="/bookings" element={<BookingsPage />} />
         <Route path="/admin" element={<AdminHomePage />} />
         <Route path="/admin/users" element={<UserManagementPage />} />
+        <Route path="/search" element={<SearchResults />} />
         <Route path="/properties/:id" element={<PropertyPage />} />
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/payment-status" element={<PaymentStatusPage />} />
