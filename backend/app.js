@@ -1,5 +1,6 @@
 // app.js
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const passport = require('passport');
 // const dotenv = require('dotenv'); // Більше не потрібно тут
@@ -16,11 +17,22 @@ const photoRoutes = require('./routes/photoRoutes');
 
 const app = express();
 
+// Додаємо middleware для парсингу текстових полів із FormData
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+
+
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Тепер FRONTEND_URL має бути доступний
   credentials: true
 }));
+
+// Роздача статичних файлів із папок для фото
+app.use('/property_photos', express.static(path.join(__dirname, 'public/property_photos')));
+app.use('/room_photos', express.static(path.join(__dirname, 'public/room_photos')));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(passport.initialize());
