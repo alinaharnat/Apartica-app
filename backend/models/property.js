@@ -51,7 +51,11 @@ const propertySchema = new Schema({
   },
   isListed: {
     type: Boolean,
-    default: true,
+    default: false,
+  },
+  cancellationPolicyId: {
+    type: Schema.Types.ObjectId,
+    ref: 'CancellationPolicy',
   },
 }, { timestamps: true });
 

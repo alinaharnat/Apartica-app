@@ -12,125 +12,276 @@ const HouseRuleOption = require('../models/houseRuleOption');
 const HouseRuleCategory = require('../models/houseRuleCategory');
 const Booking = require('../models/booking');
 const Review = require('../models/review');
+const CancellationPolicy = require('../models/cancellationPolicy');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const axios = require('axios'); // Додаємо axios для Unsplash API
 
-// @desc    Create a new property with rooms and photos
-// @route   POST /api/properties
+// @desc    Get data for property creation form (amenities, property types, house rules)
+// @route   GET /api/properties/form-data
 // @access  Private (PropertyOwner)
-const createPropertyWithRooms = asyncHandler(async (req, res) => {
-  const {
-    title,
-    description,
-    countryName,
-    cityName,
-    address,
-    propertyTypeName,
-    amenityIds: amenityIdsString,
-    ruleOptionIds: ruleOptionIdsString,
-  } = req.body;
-
-  const ownerId = req.user._id;
-
-  if (!req.user.userType || !req.user.userType.includes('PropertyOwner')) {
-    res.status(403);
-    throw new Error('User is not authorized to list properties.');
-  }
-
-  const owner = await User.findById(ownerId);
-  if (!owner) {
-    res.status(404);
-    throw new Error('Owner not found');
-  }
-
-  let amenityIds = [];
-  let ruleOptionIds = [];
-  const roomsData = [];
+const getFormData = asyncHandler(async (req, res) => {
 
   try {
-    if (amenityIdsString) amenityIds = JSON.parse(amenityIdsString);
-    if (ruleOptionIdsString) ruleOptionIds = JSON.parse(ruleOptionIdsString);
+    const amenities = await Amenity.find().select('name icon') || [];
 
-    let roomIndex = 0;
-    while (req.body[`rooms[${roomIndex}][numBedrooms]`] !== undefined) {
-      roomsData.push({
-        bedrooms: parseInt(req.body[`rooms[${roomIndex}][numBedrooms]`], 10),
-        bathrooms: parseInt(req.body[`rooms[${roomIndex}][numBathrooms]`], 10),
-        maxGuests: parseInt(req.body[`rooms[${roomIndex}][maxGuests]`], 10),
-        pricePerNight: parseFloat(req.body[`rooms[${roomIndex}][pricePerNight]`]),
+    const propertyTypes = await PropertyType.find().select('name') || [];
+
+    const houseRuleOptions = await HouseRuleOption.find()
+      .populate('categoryId', 'name')
+      .select('value categoryId');
+
+
+    const houseRulesMap = {};
+
+    houseRuleOptions.forEach(option => {
+      const category = option.categoryId;
+      if (!category) return;
+
+      const categoryName = category.name;
+      if (!houseRulesMap[categoryName]) {
+        houseRulesMap[categoryName] = {
+          category: categoryName,
+          options: [],
+        };
+      }
+
+      houseRulesMap[categoryName].options.push({
+        id: option._id.toString(),
+        label: option.value,
       });
-      roomIndex++;
+    });
+
+    const houseRules = Object.values(houseRulesMap);
+
+    res.status(200).json({
+      amenities,
+      propertyTypes,
+      houseRules,
+    });
+  } catch (error) {
+    console.error('getFormData error:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
+// Налаштування multer для збереження файлів
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    let uploadPath;
+    if (file.fieldname.startsWith('room_')) {
+      uploadPath = path.join(__dirname, '../public/room_photos');
+    } else {
+      uploadPath = path.join(__dirname, '../public/property_photos');
     }
-  } catch (e) {
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed'), false);
+    }
+    cb(null, true);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 }, // Максимум 5MB на файл
+});
+
+const createPropertyWithRooms = asyncHandler(async (req, res) => {
+
+  const {
+    title, // Тепер це title, а не headline
+    description,
+    country,
+    city,
+    address,
+    location,
+    amenities,
+    houseRules,
+    propertyType,
+    cancellationPolicy,
+    rooms,
+  } = req.body;
+
+  if (!title || !description || !address || !location || !location.latitude || !location.longitude) {
     res.status(400);
-    throw new Error('Invalid JSON data for amenities, rules, or rooms.');
+    throw new Error('Title, description, address, and location coordinates are required');
   }
 
-  if (!title || !description || !countryName || !cityName || !address || !propertyTypeName || roomsData.length === 0) {
+  // Перевірка, чи передано country
+  if (!country) {
     res.status(400);
-    throw new Error('Please fill all required property fields and add at least one room.');
+    throw new Error('Country is required');
   }
 
-  const countryDoc = await Country.findOne({ name: countryName });
-  if (!countryDoc) throw new Error(`Country '${countryName}' not found.`);
+  // Пошук або створення країни
+  let countryDoc = await Country.findOne({ name: country });
+  if (!countryDoc) {
+    countryDoc = await Country.create({ name: country });
+  }
 
-  const cityDoc = await City.findOne({ name: cityName, countryId: countryDoc._id });
-  if (!cityDoc) throw new Error(`City '${cityName}' in country '${countryName}' not found.`);
+  // Перевірка, чи країна створена
+  if (!countryDoc || !countryDoc._id) {
+    res.status(500);
+    throw new Error('Failed to create or find country');
+  }
 
-  const propertyTypeDoc = await PropertyType.findOne({ name: propertyTypeName });
-  if (!propertyTypeDoc) throw new Error(`Property type '${propertyTypeName}' not found.`);
+  // Пошук або створення міста
+  let cityDoc = await City.findOne({ name: city, countryId: countryDoc._id });
+  let isNewCity = false;
+  if (!cityDoc) {
+    isNewCity = true;
+    cityDoc = await City.create({ name: city, countryId: countryDoc._id });
+  }
 
-  const property = new Property({
+  // Перевірка, чи місто створено
+  if (!cityDoc || !cityDoc._id) {
+    res.status(500);
+    throw new Error('Failed to create or find city');
+  }
+
+  // Додавання фото для нового міста через Unsplash API
+  if (isNewCity) {
+    try {
+      const response = await axios.get('https://api.unsplash.com/search/photos', {
+        params: {
+          query: city,
+          per_page: 1,
+          orientation: 'landscape',
+        },
+        headers: {
+          Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
+        },
+      });
+
+      if (response.data.results.length > 0) {
+        cityDoc.imageUrl = response.data.results[0].urls.regular;
+        await cityDoc.save();
+      }
+    } catch (error) {
+      console.error(`Failed to fetch photo for city ${city} from Unsplash:`, error.message);
+    }
+  }
+
+  // Додавання ролі PropertyOwner користувачу
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+  if (!user.userType.includes('PropertyOwner')) {
+    user.userType.push('PropertyOwner');
+    await user.save();
+  }
+
+  // Обробка CancellationPolicy
+  const policyData = JSON.parse(cancellationPolicy);
+  let cancellationPolicyDoc = await CancellationPolicy.findOne({
+    rules: policyData.rules,
+    isCustom: policyData.isCustom,
+  });
+  if (!cancellationPolicyDoc) {
+    cancellationPolicyDoc = await CancellationPolicy.create({
+      rules: policyData.rules,
+      isCustom: policyData.isCustom,
+    });
+  }
+
+  // Перевірка, чи створена політика скасування
+  if (!cancellationPolicyDoc || !cancellationPolicyDoc._id) {
+    res.status(500);
+    throw new Error('Failed to create or find cancellation policy');
+  }
+
+  // Створення Property
+  const property = await Property.create({
     title,
     description,
     address,
-    location: { latitude: parseFloat(req.body.latitude) || 0, longitude: parseFloat(req.body.longitude) || 0 },
+    location: {
+      latitude: location.latitude,
+      longitude: location.longitude,
+    },
     cityId: cityDoc._id,
-    ownerId,
-    amenities: amenityIds,
-    rules: ruleOptionIds,
-    propertyType: propertyTypeDoc._id,
+    ownerId: req.user._id,
+    amenities: JSON.parse(amenities),
+    rules: JSON.parse(houseRules),
+    propertyType,
+    cancellationPolicyId: cancellationPolicyDoc._id,
+    averageRating: 0,
     isListed: true,
   });
 
-  const createdProperty = await property.save();
-
-  if (req.files && req.files.propertyPhotos) {
-    for (const file of req.files.propertyPhotos) {
-      const photo = new Photo({
-        url: `/uploads/property_photos/${file.filename}`,
-        filename: file.filename,
-        propertyId: createdProperty._id,
-      });
-      await photo.save();
-    }
-  }
-
-  for (let i = 0; i < roomsData.length; i++) {
-    const roomData = roomsData[i];
-    const room = new Room({
-      propertyId: createdProperty._id,
-      bedrooms: roomData.bedrooms,
-      bathrooms: roomData.bathrooms,
-      maxGuests: roomData.maxGuests,
-      pricePerNight: roomData.pricePerNight,
+  // Створення Rooms
+  const roomsData = JSON.parse(rooms);
+  const createdRooms = [];
+  for (const room of roomsData) {
+    const newRoom = await Room.create({
+      propertyId: property._id,
+      bedrooms: room.numBedrooms,
+      bathrooms: room.numBathrooms,
+      maxGuests: room.maxGuests,
+      pricePerNight: room.pricePerNight,
     });
-    const savedRoom = await room.save();
+    createdRooms.push(newRoom);
+  }
 
-    const roomPhotoFieldName = `room_${i}_photos`;
-    if (req.files && req.files[roomPhotoFieldName]) {
-      for (const file of req.files[roomPhotoFieldName]) {
-        const photo = new Photo({
-          url: `/uploads/room_photos/${file.filename}`,
-          filename: file.filename,
-          roomId: savedRoom._id,
-        });
-        await photo.save();
-      }
+  const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
+  // Збереження фото для Property
+  const propertyPhotos = req.files.photos || [];
+  const photosToSave = [];
+  for (const photo of propertyPhotos) {
+    const photoPath = `${BASE_URL}/property_photos/${photo.filename}`;
+    await Photo.create({
+      url: photoPath,
+      propertyId: property._id,
+    });
+    photosToSave.push(photoPath);
+  }
+
+  // Збереження фото для Rooms
+  const roomPhotos = req.files.room_photos || [];
+  const photosByRoomIndex = {};
+  for (const photo of roomPhotos) {
+    const [roomIndex] = photo.originalname.split('_'); // Отримуємо індекс із імені файлу
+    const index = parseInt(roomIndex);
+    if (!photosByRoomIndex[index]) {
+      photosByRoomIndex[index] = [];
+    }
+    photosByRoomIndex[index].push(photo);
+  }
+
+  for (let i = 0; i < createdRooms.length; i++) {
+    const photosForRoom = photosByRoomIndex[i] || [];
+    for (const photo of photosForRoom) {
+      const photoPath = `${BASE_URL}/room_photos/${photo.filename}`;
+      await Photo.create({
+        url: photoPath,
+        roomId: createdRooms[i]._id,
+      });
     }
   }
+
+  // Оновлення CancellationPolicy з propertyId
+  cancellationPolicyDoc.propertyId = property._id;
+  await cancellationPolicyDoc.save();
 
   res.status(201).json({
-    message: 'Property and rooms created successfully!',
-    propertyId: createdProperty._id,
+    success: true,
+    data: {
+      property,
+      rooms: createdRooms,
+      photos: photosToSave,
+    },
   });
 });
 
@@ -217,7 +368,7 @@ const getPropertyById = asyncHandler(async (req, res) => {
         userDisplayName: review.userId.displayName || 'Anonymous',
         comment: review.comment,
         rating: review.overallRating,
-        createdAt: review.createdAt, // Додаємо createdAt
+        createdAt: review.createdAt,
       })),
     });
   } catch (error) {
@@ -227,7 +378,6 @@ const getPropertyById = asyncHandler(async (req, res) => {
 });
 
 // @desc Get available rooms based on dates and guests
-// @route GET /api/properties/:id/available-rooms
 const getAvailableRooms = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { startDate, endDate, guests } = req.query;
@@ -247,7 +397,7 @@ const getAvailableRooms = asyncHandler(async (req, res) => {
     const rooms = await Room.find({ propertyId: id, maxGuests: { $gte: parseInt(guests) } });
     const bookings = await Booking.find({
       roomId: { $in: rooms.map(room => room._id) },
-      status: { $in: ['pending', 'confirmed'] }, // Оновлено: лише pending і confirmed
+      status: { $in: ['pending', 'confirmed'] },
       $or: [
         { checkIn: { $lte: new Date(endDate) }, checkOut: { $gte: new Date(startDate) } },
       ],
@@ -271,7 +421,6 @@ const getAvailableRooms = asyncHandler(async (req, res) => {
 });
 
 // @desc Get unavailable dates for a property
-// @route GET /api/properties/:id/unavailable-dates
 const getUnavailableDates = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -305,9 +454,16 @@ const getUnavailableDates = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  createPropertyWithRooms,
+  createPropertyWithRooms: [
+    upload.fields([
+      { name: 'photos', maxCount: 20 },
+      { name: 'room_photos', maxCount: 100 }, // Максимум 100 фото для всіх кімнат (10 кімнат * 10 фото)
+    ]),
+    createPropertyWithRooms,
+  ],
   getProperties,
   getPropertyById,
   getAvailableRooms,
   getUnavailableDates,
+  getFormData,
 };

@@ -26,7 +26,7 @@ const App = () => {
   useEffect(() => {
     const fetchGoogleMapsKey = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/config/google-maps-key'); // Заміни на актуальний URL бекенду
+        const response = await fetch('http://localhost:5000/api/config/google-maps-key');
         if (!response.ok) {
           throw new Error('Failed to fetch Google Maps API key');
         }
@@ -57,6 +57,9 @@ const App = () => {
   return (
     <LoadScript
       googleMapsApiKey={googleMapsApiKey}
+      libraries={["places"]}
+      language="en" // Примусово англійська
+      region="us" // Упередження для англомовного регіону
     >
       <Routes>
         <Route path="/" element={<HomePage />} />

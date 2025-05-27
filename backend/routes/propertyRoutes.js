@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const propertyController = require('../controllers/propertyController');
+const { protect } = require('../middleware/authMiddleware');
+
+router.get('/form-data', propertyController.getFormData);
 
 // Отримання конкретного помешкання за ID
 router.get('/:id', propertyController.getPropertyById);
 
 // Створення нового помешкання
-router.post('/', propertyController.createPropertyWithRooms);
+router.post('/', protect, propertyController.createPropertyWithRooms);
 
 // Отримання списку всіх помешкань
 router.get('/', propertyController.getProperties);
