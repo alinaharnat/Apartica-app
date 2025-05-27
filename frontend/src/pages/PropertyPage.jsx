@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import GalleryModal from '../components/GalleryModal';
 import DatePicker from 'react-datepicker';
@@ -14,6 +14,7 @@ const fallbackImage = '../../public/fallback.jpg';
 const PropertyPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +40,28 @@ const PropertyPage = () => {
   const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
   const mapRef = useRef(null);
 
+  // Извлечение параметров из URL
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const urlGuests = parseInt(searchParams.get('guests')) || 1;
+    const urlCheckIn = searchParams.get('checkIn') ? new Date(searchParams.get('checkIn')) : null;
+    const urlCheckOut = searchParams.get('checkOut') ? new Date(searchParams.get('checkOut')) : null;
+
+    console.log('URL params:', { urlGuests, urlCheckIn, urlCheckOut });
+
+    setGuests(urlGuests);
+    if (urlCheckIn && !isNaN(urlCheckIn.getTime())) {
+      const newStartDate = new Date(urlCheckIn);
+      newStartDate.setHours(0, 0, 0, 0);
+      setStartDate(newStartDate);
+    }
+    if (urlCheckOut && !isNaN(urlCheckOut.getTime())) {
+      const newEndDate = new Date(urlCheckOut);
+      newEndDate.setHours(0, 0, 0, 0);
+      setEndDate(newEndDate);
+    }
+  }, [location.search]);
+
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
@@ -49,11 +72,14 @@ const PropertyPage = () => {
   useEffect(() => {
     const fetchProperty = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const { data } = await axios.get(`/api/properties/${id}`);
+        console.log('Property data:', data);
         setProperty(data);
       } catch (err) {
         console.error('Failed to fetch property:', err);
-        setError('Failed to fetch property');
+        setError(err.response?.status === 404 ? 'Property not found' : `Failed to fetch property: ${err.message}`);
       } finally {
         setLoading(false);
       }
@@ -65,9 +91,14 @@ const PropertyPage = () => {
     const fetchAvailableRooms = async () => {
       try {
         const response = await axios.get(`/api/properties/${id}/available-rooms`, {
-          params: { startDate: startDate.toISOString(), endDate: endDate.toISOString(), guests },
+          params: { 
+            startDate: startDate.toISOString(), 
+            endDate: endDate.toISOString(), 
+            guests 
+          },
         });
         const rooms = response.data;
+        console.log('Available rooms:', rooms);
         setAvailableRooms(rooms);
         if (rooms.length) {
           const cheapestRoom = rooms.reduce((min, room) =>
@@ -79,9 +110,12 @@ const PropertyPage = () => {
         }
       } catch (err) {
         console.error('Failed to fetch available rooms:', err);
+        setError(`Failed to fetch available rooms: ${err.message}`);
       }
     };
-    fetchAvailableRooms();
+    if (startDate && endDate && guests && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+      fetchAvailableRooms();
+    }
   }, [id, startDate, endDate, guests]);
 
   useEffect(() => {
@@ -97,7 +131,7 @@ const PropertyPage = () => {
   useEffect(() => {
     return () => {
       if (mapRef.current) {
-        mapRef.current = null; // Очищаємо екземпляр мапи при демонтуванні
+        mapRef.current = null;
       }
     };
   }, []);
@@ -108,8 +142,7 @@ const PropertyPage = () => {
     startCopy.setHours(0, 0, 0, 0);
     endCopy.setHours(0, 0, 0, 0);
     const diffTime = endCopy - startCopy;
-    const nights = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-    return nights;
+    return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
   };
 
   const handleShare = () => {
@@ -123,7 +156,7 @@ const PropertyPage = () => {
       return;
     }
     if (!user) {
-      alert('You are required to sign in or register on Apartica in order to proceed with booking.');
+      alert('You need to sign in or register on Apartica to proceed with booking.');
       return;
     }
     if (!user?.phoneNumber || user.phoneNumber.trim() === '' || !user?.dateOfBirth || !user?.email) {

@@ -22,17 +22,20 @@ const Hero = () => {
   const validate = () => {
     const e = {};
     if (!destination.trim()) e.destination = 'Please enter destination';
-
-    if (checkIn || checkOut) {
-      if (!checkIn)  e.checkIn  = 'Select check-in';
-      if (!checkOut) e.checkOut = 'Select check-out';
-    }
-    if (checkIn && checkIn < today)                     e.checkIn  = 'Past date';
-    if (checkOut && checkOut < today)                   e.checkOut = 'Past date';
-    if (checkIn && checkOut && checkOut <= checkIn)     e.checkOut = 'Must be after check-in';
-    if (!guests || guests < 1)                          e.guests   = 'Add guests';
+  
+    // Проверяем обязательность обеих дат
+    if (!checkIn) e.checkIn = 'Select check-in';
+    if (!checkOut) e.checkOut = 'Select check-out';
+  
+    if (checkIn && checkIn < today) e.checkIn = 'Past date';
+    if (checkOut && checkOut < today) e.checkOut = 'Past date';
+    if (checkIn && checkOut && checkOut <= checkIn) e.checkOut = 'Must be after check-in';
+  
+    if (!guests || guests < 1) e.guests = 'Add guests';
+  
     return e;
   };
+  
 
   const handleSubmit = (e) => {
     e.preventDefault();
