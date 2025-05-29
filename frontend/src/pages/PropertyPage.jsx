@@ -16,6 +16,11 @@ const PropertyPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const [userDetails, setUserDetails] = useState({
+    name: '',
+    email: '',
+    phoneNumber: '',
+  });
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -65,7 +70,13 @@ const PropertyPage = () => {
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
-      setUser(JSON.parse(stored));
+      const parsedUser = JSON.parse(stored);
+      setUser(parsedUser);
+      setUserDetails({
+        name: parsedUser.name || `${parsedUser.firstName || ''} ${parsedUser.lastName || ''}`.trim(),
+        email: parsedUser.email || '',
+        phoneNumber: parsedUser.phoneNumber || '',
+      });
     }
   }, []);
 
@@ -159,7 +170,7 @@ const PropertyPage = () => {
       alert('You need to sign in or register on Apartica to proceed with booking.');
       return;
     }
-    if (!user?.phoneNumber || user.phoneNumber.trim() === '' || !user?.dateOfBirth || !user?.email) {
+    if (!user?.phoneNumber || user.phoneNumber.trim() === '' || !user?.dateOfBirth || !userDetails?.email) {
       alert('Please fill in all necessary profile data to book property on Apartica.');
       return;
     }
