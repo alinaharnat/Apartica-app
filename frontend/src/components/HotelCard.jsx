@@ -23,7 +23,7 @@ const HotelCard = ({ searchParams, filters }) => {
         const minRating = filters?.reviewScore ?? 0;
 
         const queryParams = new URLSearchParams({
-          sort: '-averageRating',
+          sort: '-positiveReviewCount', // Сортировка по количеству положительных отзывов
           limit: 10,
           minPrice,
           maxPrice,

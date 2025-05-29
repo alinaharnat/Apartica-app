@@ -22,23 +22,17 @@ const axios = require('axios');
 // @route   GET /api/properties/form-data
 // @access  Private (PropertyOwner)
 const getFormData = asyncHandler(async (req, res) => {
-
   try {
     const amenities = await Amenity.find().select('name icon') || [];
-
     const propertyTypes = await PropertyType.find().select('name') || [];
-
     const houseRuleOptions = await HouseRuleOption.find()
       .populate('categoryId', 'name')
       .select('value categoryId');
 
-
     const houseRulesMap = {};
-
     houseRuleOptions.forEach(option => {
       const category = option.categoryId;
       if (!category) return;
-
       const categoryName = category.name;
       if (!houseRulesMap[categoryName]) {
         houseRulesMap[categoryName] = {
@@ -46,13 +40,11 @@ const getFormData = asyncHandler(async (req, res) => {
           options: [],
         };
       }
-
       houseRulesMap[categoryName].options.push({
         id: option._id.toString(),
         label: option.value,
       });
     });
-
     const houseRules = Object.values(houseRulesMap);
 
     res.status(200).json({
@@ -97,9 +89,8 @@ const upload = multer({
 });
 
 const createPropertyWithRooms = asyncHandler(async (req, res) => {
-
   const {
-    title, // Тепер це title, а не headline
+    title,
     description,
     country,
     city,
@@ -117,25 +108,21 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     throw new Error('Title, description, address, and location coordinates are required');
   }
 
-  // Перевірка, чи передано country
   if (!country) {
     res.status(400);
     throw new Error('Country is required');
   }
 
-  // Пошук або створення країни
   let countryDoc = await Country.findOne({ name: country });
   if (!countryDoc) {
     countryDoc = await Country.create({ name: country });
   }
 
-  // Перевірка, чи країна створена
   if (!countryDoc || !countryDoc._id) {
     res.status(500);
     throw new Error('Failed to create or find country');
   }
 
-  // Пошук або створення міста
   let cityDoc = await City.findOne({ name: city, countryId: countryDoc._id });
   let isNewCity = false;
   if (!cityDoc) {
@@ -143,13 +130,11 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     cityDoc = await City.create({ name: city, countryId: countryDoc._id });
   }
 
-  // Перевірка, чи місто створено
   if (!cityDoc || !cityDoc._id) {
     res.status(500);
     throw new Error('Failed to create or find city');
   }
 
-  // Додавання фото для нового міста через Unsplash API
   if (isNewCity) {
     try {
       const response = await axios.get('https://api.unsplash.com/search/photos', {
@@ -172,7 +157,6 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     }
   }
 
-  // Додавання ролі PropertyOwner користувачу
   const user = await User.findById(req.user._id);
   if (!user) {
     res.status(404);
@@ -183,7 +167,6 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     await user.save();
   }
 
-  // Обробка CancellationPolicy
   const policyData = JSON.parse(cancellationPolicy);
   let cancellationPolicyDoc = await CancellationPolicy.findOne({
     rules: policyData.rules,
@@ -196,13 +179,11 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     });
   }
 
-  // Перевірка, чи створена політика скасування
   if (!cancellationPolicyDoc || !cancellationPolicyDoc._id) {
     res.status(500);
     throw new Error('Failed to create or find cancellation policy');
   }
 
-  // Створення Property
   const property = await Property.create({
     title,
     description,
@@ -221,7 +202,6 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     isListed: false,
   });
 
-  // Створення Rooms
   const roomsData = JSON.parse(rooms);
   const createdRooms = [];
   for (const room of roomsData) {
@@ -236,7 +216,6 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
   }
 
   const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
-  // Збереження фото для Property
   const propertyPhotos = req.files.photos || [];
   const photosToSave = [];
   for (const photo of propertyPhotos) {
@@ -248,11 +227,10 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     photosToSave.push(photoPath);
   }
 
-  // Збереження фото для Rooms
   const roomPhotos = req.files.room_photos || [];
   const photosByRoomIndex = {};
   for (const photo of roomPhotos) {
-    const [roomIndex] = photo.originalname.split('_'); // Отримуємо індекс із імені файлу
+    const [roomIndex] = photo.originalname.split('_');
     const index = parseInt(roomIndex);
     if (!photosByRoomIndex[index]) {
       photosByRoomIndex[index] = [];
@@ -271,7 +249,6 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     }
   }
 
-  // Оновлення CancellationPolicy з propertyId
   cancellationPolicyDoc.propertyId = property._id;
   await cancellationPolicyDoc.save();
 
@@ -287,7 +264,20 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
 
 // @desc Get all properties
 const getProperties = asyncHandler(async (req, res) => {
-  const { limit, minPrice, maxPrice, minRating, city, type, amenities, guests, checkIn, checkOut } = req.query;
+  const {
+    limit = 0, // 0 означает отсутствие лимита
+    minPrice = 0,
+    maxPrice,
+    minRating = 0,
+    city,
+    type,
+    amenities,
+    guests,
+    checkIn,
+    checkOut,
+    sort = '-positiveReviewCount', // По умолчанию сортировка по количеству положительных отзывов
+  } = req.query;
+
   try {
     const filter = { isListed: true };
 
@@ -305,7 +295,6 @@ const getProperties = asyncHandler(async (req, res) => {
     if (type) {
       const propertyTypes = type.split(',');
       const typeDocs = await PropertyType.find({ name: { $in: propertyTypes } });
-      console.log('PropertyType docs:', typeDocs);
       if (typeDocs.length > 0) {
         filter.propertyType = { $in: typeDocs.map(doc => doc._id) };
       } else {
@@ -318,7 +307,6 @@ const getProperties = asyncHandler(async (req, res) => {
     if (amenities) {
       const amenityNames = amenities.split(',');
       const amenityDocs = await Amenity.find({ name: { $in: amenityNames } });
-      console.log('Amenity docs:', amenityDocs);
       if (amenityDocs.length > 0) {
         filter.amenities = { $all: amenityDocs.map(doc => doc._id) };
       }
@@ -329,21 +317,116 @@ const getProperties = asyncHandler(async (req, res) => {
       filter.averageRating = { $gte: parseFloat(minRating) };
     }
 
-    // Fetch properties
-    let propertiesData = await Property.find(filter)
-      .populate({
-        path: 'cityId',
-        populate: { path: 'countryId' },
-      })
-      .populate('propertyType', 'name')
-      .populate('amenities', 'name')
-      .populate({ path: 'rules', populate: { path: 'categoryId', model: 'HouseRuleCategory' } })
-      .populate('ownerId', 'firstName lastName')
-      .limit(parseInt(limit) || 10);
+    // Подготовка сортировки
+    const sortFields = {};
+    const sortParams = sort.split(',').map(s => s.trim());
+    sortParams.forEach(param => {
+      const [field, order] = param.startsWith('-') ? [param.slice(1), -1] : [param, 1];
+      if (['positiveReviewCount', 'averageRating', 'pricePerNight'].includes(field)) {
+        sortFields[field] = order;
+      }
+    });
 
-    // Filter by rooms and availability
-    propertiesData = await Promise.all(
-      propertiesData.map(async (property) => {
+    // Агрегация для подсчета положительных отзывов
+    const pipeline = [
+      // Фильтрация по базовым условиям
+      { $match: filter },
+      // Присоединяем отзывы
+      {
+        $lookup: {
+          from: 'reviews',
+          localField: '_id',
+          foreignField: 'propertyId',
+          as: 'reviews',
+        },
+      },
+      // Подсчет положительных отзывов (overallRating >= 8)
+      {
+        $addFields: {
+          positiveReviewCount: {
+            $size: {
+              $filter: {
+                input: '$reviews',
+                as: 'review',
+                cond: { $gte: ['$$review.overallRating', 8] },
+              },
+            },
+          },
+        },
+      },
+      // Фильтрация по минимальному рейтингу
+      {
+        $match: {
+          $or: [
+            { averageRating: { $gte: parseFloat(minRating) } },
+            { averageRating: { $exists: false }, positiveReviewCount: { $gte: parseFloat(minRating) } },
+          ],
+        },
+      },
+      // Присоединяем данные о городе и стране
+      {
+        $lookup: {
+          from: 'cities',
+          localField: 'cityId',
+          foreignField: '_id',
+          as: 'cityId',
+        },
+      },
+      { $unwind: { path: '$cityId', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'countries',
+          localField: 'cityId.countryId',
+          foreignField: '_id',
+          as: 'countryId',
+        },
+      },
+      { $unwind: { path: '$countryId', preserveNullAndEmptyArrays: true } },
+      // Присоединяем тип недвижимости и удобства
+      {
+        $lookup: {
+          from: 'propertytypes',
+          localField: 'propertyType',
+          foreignField: '_id',
+          as: 'propertyType',
+        },
+      },
+      { $unwind: { path: '$propertyType', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'amenities',
+          localField: 'amenities',
+          foreignField: '_id',
+          as: 'amenities',
+        },
+      },
+      // Сортировка
+      { $sort: Object.keys(sortFields).length > 0 ? sortFields : { positiveReviewCount: -1, averageRating: -1 } },
+      // Ограничение, если указано
+      ...(limit > 0 ? [{ $limit: parseInt(limit) }] : []),
+      // Формирование результата
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          description: 1,
+          address: 1,
+          location: 1,
+          averageRating: 1,
+          positiveReviewCount: 1,
+          cityId: { _id: '$cityId._id', name: '$cityId.name' },
+          countryId: { _id: '$countryId._id', name: '$countryId.name' },
+          propertyType: { _id: '$propertyType._id', name: '$propertyType.name' },
+          amenities: '$amenities.name',
+        },
+      },
+    ];
+
+    let properties = await Property.aggregate(pipeline);
+
+    // Фильтрация по комнатам и доступности
+    const propertiesData = await Promise.all(
+      properties.map(async (property) => {
         const roomFilter = { propertyId: property._id };
         if (guests) roomFilter.maxGuests = { $gte: parseInt(guests) };
         if (minPrice || maxPrice) {
@@ -380,13 +463,19 @@ const getProperties = asyncHandler(async (req, res) => {
           }
         }
 
-        // Fetch photos separately
+        // Fetch photos
         const photos = await Photo.find({ propertyId: property._id }).select('url filename').limit(5);
-        return { ...property.toJSON(), pricePerNight, photos };
+        return { ...property, pricePerNight, photos };
       })
     ).then(results => results.filter(property => property !== null));
 
+
+    
     console.log('Filtered properties:', propertiesData.length);
+    if (!propertiesData.length) {
+      return res.status(200).json([]);
+    }
+
     res.status(200).json(propertiesData);
   } catch (err) {
     console.error('Error fetching properties:', err);
@@ -394,7 +483,7 @@ const getProperties = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc Get property by ID with additional data
+// Остальные функции без изменений
 const getPropertyById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -474,7 +563,6 @@ const getPropertyById = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc Get available rooms based on dates and guests
 const getAvailableRooms = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { startDate, endDate, guests } = req.query;
@@ -517,7 +605,6 @@ const getAvailableRooms = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc Get unavailable dates for a property
 const getUnavailableDates = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -554,7 +641,7 @@ module.exports = {
   createPropertyWithRooms: [
     upload.fields([
       { name: 'photos', maxCount: 20 },
-      { name: 'room_photos', maxCount: 100 }, // Max 100 photos for all rooms (10 rooms * 10 photos)
+      { name: 'room_photos', maxCount: 100 },
     ]),
     createPropertyWithRooms,
   ],
