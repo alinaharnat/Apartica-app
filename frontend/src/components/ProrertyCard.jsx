@@ -128,7 +128,7 @@ const PropertyCard = ({ searchParams, filters, sortOption, onHotelClick }) => {
               <p className="text-sm text-gray-600">{property.cityId?.name}, {property.cityId?.countryId?.name}</p>
               <p className="text-sm text-gray-500 mt-1">{property.description}</p>
               <div className="mt-2 flex items-center">
-                <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded">
+                <span className="bg-[#8252A1] hover:bg-[#6f4587] text-white text-xs px-2 py-1 rounded">
                   {property.averageRating.toFixed(1)}
                 </span>
                 <span className="ml-2 text-sm text-gray-600">
@@ -146,13 +146,13 @@ const PropertyCard = ({ searchParams, filters, sortOption, onHotelClick }) => {
                 </p>
               </div>
               <button
-                className="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition"
+                className="bg-[#8252A1] hover:bg-[#6f4587] text-white py-2 px-4 rounded-lg transition"
                 onClick={(e) => {
                   e.stopPropagation();
                   onHotelClick(property._id);
                 }}
               >
-                Show prices
+                Show options
               </button>
             </div>
           </div>

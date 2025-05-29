@@ -16,7 +16,7 @@ const CancellationPolicy = require('../models/cancellationPolicy');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const axios = require('axios'); // Додаємо axios для Unsplash API
+const axios = require('axios');
 
 // @desc    Get data for property creation form (amenities, property types, house rules)
 // @route   GET /api/properties/form-data
@@ -218,7 +218,7 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     propertyType,
     cancellationPolicyId: cancellationPolicyDoc._id,
     averageRating: 0,
-    isListed: true,
+    isListed: false,
   });
 
   // Створення Rooms
@@ -287,14 +287,111 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
 
 // @desc Get all properties
 const getProperties = asyncHandler(async (req, res) => {
-  const properties = await Property.find({ isListed: true })
-    .populate('cityId', 'name')
-    .populate('propertyType', 'name')
-    .populate('amenities', 'name')
-    .populate({ path: 'rules', populate: { path: 'categoryId', model: 'HouseRuleCategory' } })
-    .populate('ownerId', 'firstName lastName');
+  const { limit, minPrice, maxPrice, minRating, city, type, amenities, guests, checkIn, checkOut } = req.query;
+  try {
+    const filter = { isListed: true };
 
-  res.status(200).json(properties);
+    // City filter
+    if (city) {
+      const cityDoc = await City.findOne({ name: city });
+      if (!cityDoc) {
+        console.log(`City '${city}' not found`);
+        return res.status(200).json([]);
+      }
+      filter.cityId = cityDoc._id;
+    }
+
+    // Property type filter
+    if (type) {
+      const propertyTypes = type.split(',');
+      const typeDocs = await PropertyType.find({ name: { $in: propertyTypes } });
+      console.log('PropertyType docs:', typeDocs);
+      if (typeDocs.length > 0) {
+        filter.propertyType = { $in: typeDocs.map(doc => doc._id) };
+      } else {
+        console.log(`No PropertyType found for: ${propertyTypes.join(', ')}`);
+        return res.status(200).json([]);
+      }
+    }
+
+    // Amenities filter
+    if (amenities) {
+      const amenityNames = amenities.split(',');
+      const amenityDocs = await Amenity.find({ name: { $in: amenityNames } });
+      console.log('Amenity docs:', amenityDocs);
+      if (amenityDocs.length > 0) {
+        filter.amenities = { $all: amenityDocs.map(doc => doc._id) };
+      }
+    }
+
+    // Rating filter
+    if (minRating) {
+      filter.averageRating = { $gte: parseFloat(minRating) };
+    }
+
+    // Fetch properties
+    let propertiesData = await Property.find(filter)
+      .populate({
+        path: 'cityId',
+        populate: { path: 'countryId' },
+      })
+      .populate('propertyType', 'name')
+      .populate('amenities', 'name')
+      .populate({ path: 'rules', populate: { path: 'categoryId', model: 'HouseRuleCategory' } })
+      .populate('ownerId', 'firstName lastName')
+      .limit(parseInt(limit) || 10);
+
+    // Filter by rooms and availability
+    propertiesData = await Promise.all(
+      propertiesData.map(async (property) => {
+        const roomFilter = { propertyId: property._id };
+        if (guests) roomFilter.maxGuests = { $gte: parseInt(guests) };
+        if (minPrice || maxPrice) {
+          roomFilter.pricePerNight = {};
+          if (minPrice) roomFilter.pricePerNight.$gte = parseInt(minPrice);
+          if (maxPrice) roomFilter.pricePerNight.$lte = parseInt(maxPrice);
+        }
+
+        const rooms = await Room.find(roomFilter);
+        if (rooms.length === 0) {
+          console.log(`No rooms found for property ${property._id}`);
+          return null;
+        }
+
+        const pricePerNight = Math.min(...rooms.map(room => room.pricePerNight));
+
+        if (checkIn && checkOut) {
+          const startDate = new Date(checkIn);
+          const endDate = new Date(checkOut);
+          if (isNaN(startDate) || isNaN(endDate)) {
+            console.log(`Invalid dates for property ${property._id}: checkIn=${checkIn}, checkOut=${checkOut}`);
+            return null;
+          }
+          const bookings = await Booking.find({
+            roomId: { $in: rooms.map(room => room._id) },
+            status: { $in: ['pending', 'confirmed'] },
+            $or: [{ checkIn: { $lte: endDate }, checkOut: { $gte: startDate } }],
+          });
+          const unavailableRoomIds = bookings.map(booking => booking.roomId.toString());
+          const availableRooms = rooms.filter(room => !unavailableRoomIds.includes(room._id.toString()));
+          if (availableRooms.length === 0) {
+            console.log(`No available rooms for property ${property._id} on dates ${checkIn} to ${checkOut}`);
+            return null;
+          }
+        }
+
+        // Fetch photos separately
+        const photos = await Photo.find({ propertyId: property._id }).select('url filename').limit(5);
+        return { ...property.toJSON(), pricePerNight, photos };
+      })
+    ).then(results => results.filter(property => property !== null));
+
+    console.log('Filtered properties:', propertiesData.length);
+    res.status(200).json(propertiesData);
+  } catch (err) {
+    console.error('Error fetching properties:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 });
 
 // @desc Get property by ID with additional data
@@ -457,7 +554,7 @@ module.exports = {
   createPropertyWithRooms: [
     upload.fields([
       { name: 'photos', maxCount: 20 },
-      { name: 'room_photos', maxCount: 100 }, // Максимум 100 фото для всіх кімнат (10 кімнат * 10 фото)
+      { name: 'room_photos', maxCount: 100 }, // Max 100 photos for all rooms (10 rooms * 10 photos)
     ]),
     createPropertyWithRooms,
   ],

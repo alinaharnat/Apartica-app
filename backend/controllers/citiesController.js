@@ -32,6 +32,19 @@ const getTopCities = async (req, res) => {
   }
 };
 
+router.get('/cities/:id', async (req, res) => {
+  try {
+    const city = await City.findById(req.params.id).populate('countryId');
+    if (!city) {
+      return res.status(404).json({ message: 'City not found' });
+    }
+    res.json(city);
+  } catch (err) {
+    console.error('Error getting city by id:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 module.exports = {
   getTopCities
 };

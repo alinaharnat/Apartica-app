@@ -10,6 +10,8 @@ const adminRoutes = require('./routes/adminRoutes');
 const propertyRoutes = require('./routes/propertyRoutes');
 const propertyTypeRoutes = require('./routes/propertyTypeRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const photoRoutes = require('./routes/photoRoutes');
+
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
@@ -56,6 +58,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/property-types', propertyTypeRoutes);
 app.use('/api/booking', bookingRoutes);
+app.use('/api/photos', photoRoutes);
 
 // Health check route
 app.get('/', (req, res) => {

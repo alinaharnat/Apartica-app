@@ -163,22 +163,21 @@ const SearchResults = () => {
                 onChange={(e) => setGuests(e.target.value)}
               />
             </div>
-
             <button
-              type="submit"
-              className="ml-auto lg:ml-6 bg-purple-600 hover:bg-purple-800 transition-colors rounded-full p-3 w-full sm:w-auto"
-            >
-              <svg
-                className="w-5 h-5 text-white mx-auto"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-3.5-3.5M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
+  type="submit"
+  className="ml-auto lg:ml-6 bg-[#8252A1] hover:bg-[#6f4587] transition-colors rounded-full p-3 w-full sm:w-auto"
+>
+  <svg
+    className="w-5 h-5 text-white mx-auto"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-3.5-3.5M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+</button>
           </form>
         </div>
 
@@ -205,7 +204,7 @@ const SearchResults = () => {
                   onChange={(e) =>
                     handleFilterChange('priceRange', [filters.priceRange[0], parseInt(e.target.value)])
                   }
-                  className="w-full accent-purple-500"
+                  className="w-full accent-[#8252A1]"
                 />
                 <div className="flex justify-between text-sm text-gray-500 mt-1">
                   <span>€{filters.priceRange[0]}</span>
@@ -219,7 +218,7 @@ const SearchResults = () => {
                 <label className="flex items-center mb-2">
                   <input
                     type="checkbox"
-                    className="mr-2 accent-purple-500"
+                    className="mr-2 accent-[#8252A1]"
                     checked={filters.amenities.includes('private-bathroom')}
                     onChange={() => handleFilterChange('amenities', 'private-bathroom', true)}
                   />
@@ -228,7 +227,7 @@ const SearchResults = () => {
                 <label className="flex items-center mb-2">
                   <input
                     type="checkbox"
-                    className="mr-2 accent-purple-500"
+                    className="mr-2 accent-[#8252A1]"
                     checked={filters.amenities.includes('hotels')}
                     onChange={() => handleFilterChange('amenities', 'hotels', true)}
                   />
@@ -237,7 +236,7 @@ const SearchResults = () => {
                 <label className="flex items-center mb-2">
                   <input
                     type="checkbox"
-                    className="mr-2 accent-purple-500"
+                    className="mr-2 accent-[#8252A1]"
                     checked={filters.amenities.includes('5-stars')}
                     onChange={() => handleFilterChange('amenities', '5-stars', true)}
                   />
@@ -246,7 +245,7 @@ const SearchResults = () => {
                 <label className="flex items-center mb-2">
                   <input
                     type="checkbox"
-                    className="mr-2 accent-purple-500"
+                    className="mr-2 accent-[#8252A1]"
                     checked={filters.amenities.includes('pet-friendly')}
                     onChange={() => handleFilterChange('amenities', 'pet-friendly', true)}
                   />
@@ -260,7 +259,7 @@ const SearchResults = () => {
                 <label className="flex items-center mb-2">
                   <input
                     type="checkbox"
-                    className="mr-2 accent-purple-500"
+                    className="mr-2 accent-[#8252A1]"
                     checked={filters.propertyType.includes('hotels')}
                     onChange={() => handleFilterChange('propertyType', 'hotels', true)}
                   />
@@ -269,7 +268,7 @@ const SearchResults = () => {
                 <label className="flex items-center mb-2">
                   <input
                     type="checkbox"
-                    className="mr-2 accent-purple-500"
+                    className="mr-2 accent-[#8252A1]"
                     checked={filters.propertyType.includes('apartments')}
                     onChange={() => handleFilterChange('propertyType', 'apartments', true)}
                   />
@@ -278,7 +277,7 @@ const SearchResults = () => {
                 <label className="flex items-center mb-2">
                   <input
                     type="checkbox"
-                    className="mr-2 accent-purple-500"
+                    className="mr-2 accent-[#8252A1]"
                     checked={filters.propertyType.includes('hostels')}
                     onChange={() => handleFilterChange('propertyType', 'hostels', true)}
                   />
@@ -292,7 +291,7 @@ const SearchResults = () => {
                 <label className="flex items-center mb-2">
                   <input
                     type="checkbox"
-                    className="mr-2 accent-purple-500"
+                    className="mr-2 accent-[#8252A1]"
                     checked={filters.reviewScore.includes('wonderful-9+')}
                     onChange={() => handleFilterChange('reviewScore', 'wonderful-9+', true)}
                   />
@@ -301,7 +300,7 @@ const SearchResults = () => {
                 <label className="flex items-center mb-2">
                   <input
                     type="checkbox"
-                    className="mr-2 accent-purple-500"
+                    className="mr-2 accent-[#8252A1]"
                     checked={filters.reviewScore.includes('very-good-8+')}
                     onChange={() => handleFilterChange('reviewScore', 'very-good-8+', true)}
                   />
@@ -310,7 +309,7 @@ const SearchResults = () => {
                 <label className="flex items-center mb-2">
                   <input
                     type="checkbox"
-                    className="mr-2 accent-purple-500"
+                    className="mr-2 accent-[#8252A1]"
                     checked={filters.reviewScore.includes('good-7+')}
                     onChange={() => handleFilterChange('reviewScore', 'good-7+', true)}
                   />
@@ -319,7 +318,7 @@ const SearchResults = () => {
                 <label className="flex items-center mb-2">
                   <input
                     type="checkbox"
-                    className="mr-2 accent-purple-500"
+                    className="mr-2 accent-[#8252A1]"
                     checked={filters.reviewScore.includes('pleasant-6+')}
                     onChange={() => handleFilterChange('reviewScore', 'pleasant-6+', true)}
                   />

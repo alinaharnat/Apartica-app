@@ -8,29 +8,41 @@ const Country = require('../models/country');
 // GET /api/popular-cities
 router.get('/popular-cities', async (req, res) => {
   try {
-    // Знаходимо всі міста з інформацією про країну
+    // Находим все города с информацией о стране
     const cities = await City.find().populate('countryId');
 
-    // Підрахунок кількості властивостей для кожного міста
+    // Подсчет количества свойств для каждого города
     const results = await Promise.all(
       cities.map(async (city) => {
         const propertyCount = await Property.countDocuments({ cityId: city._id });
         return {
           _id: city._id,
           name: city.name,
-          imageUrl: city.imageUrl,
+          imageUrl: city.imageUrl || 'https://via.placeholder.com/250', // Запасное изображение
           country: city.countryId ? city.countryId.name : 'Unknown',
           propertyCount,
         };
       })
     );
 
-    res.json(results);
+    // Сортировка по propertyCount (по убыванию) и ограничение до 10
+    const sortedResults = results
+      .sort((a, b) => b.propertyCount - a.propertyCount) // Сортировка по убыванию
+      .slice(0, 10); // Ограничение до 10 записей
+
+    // Проверка на пустой результат
+    if (sortedResults.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    res.json(sortedResults);
   } catch (error) {
     console.error('Error in /api/popular-cities:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
+
 router.get('/cities/search', async (req, res) => {
   const query = req.query.q;
 
