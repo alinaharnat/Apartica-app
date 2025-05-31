@@ -125,8 +125,8 @@ const AddPropertyPage = () => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
 
-        if (files.length + formData.photos.length > 6) {
-            alert("You can upload a maximum of 6 photos.");
+        if (files.length + formData.photos.length > 20) {
+            alert("You can upload a maximum of 20 photos.");
             e.target.value = null;
             return;
         }
@@ -628,7 +628,7 @@ const AddPropertyPage = () => {
                                     </div>
                                     {roomPreviewPhotos[room.id]?.length > 0 && (
                                       <div className="mt-4">
-                                          <p className="text-sm font-medium text-gray-700 mb-2">Uploaded room photos ({roomPreviewPhotos[room.id].length}/6):</p>
+                                          <p className="text-sm font-medium text-gray-700 mb-2">Uploaded room photos ({roomPreviewPhotos[room.id].length}/10):</p>
                                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                               {roomPreviewPhotos[room.id].map((src, index) => (
                                                 <div key={index} className="relative group aspect-square">
@@ -775,7 +775,7 @@ const AddPropertyPage = () => {
                   {/* Photos */}
                   <div className="p-6 bg-white rounded-lg shadow-lg">
                       <h2 className="text-xl font-semibold text-gray-800 mb-1">Property Photos</h2>
-                      <p className="text-xs text-gray-500 mb-4">Add 1-6 photos of your property. Show all the details so renters know what to expect. Recommended size: 1024x1024 pixels, max 10MB each.</p>
+                      <p className="text-xs text-gray-500 mb-4">Add 1-20 photos of your property. Show all the details so renters know what to expect. Recommended size: 1024x1024 pixels, max 10MB each.</p>
                       <div className="mt-1">
                           <label
                             htmlFor="file-upload"
@@ -804,7 +804,7 @@ const AddPropertyPage = () => {
                       </div>
                       {previewPhotos.length > 0 && (
                         <div className="mt-6">
-                            <p className="text-sm font-medium text-gray-700 mb-2">Uploaded photos ({previewPhotos.length}/6):</p>
+                            <p className="text-sm font-medium text-gray-700 mb-2">Uploaded photos ({previewPhotos.length}/20):</p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                 {previewPhotos.map((src, index) => (
                                   <div key={index} className="relative group aspect-square">
