@@ -11,6 +11,7 @@ const propertyRoutes = require('./routes/propertyRoutes');
 const propertyTypeRoutes = require('./routes/propertyTypeRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const photoRoutes = require('./routes/photoRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
@@ -42,7 +43,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Google Maps API endpoint
 app.get('/api/config/google-maps-key', (req, res) => {
-  console.log('Google Maps API key requested');
   if (!process.env.GOOGLE_MAPS_API_KEY) {
     console.error('GOOGLE_MAPS_API_KEY is not defined in environment variables');
     return res.status(500).json({ error: 'Google Maps API key is not configured' });
@@ -59,6 +59,7 @@ app.use('/api/properties', propertyRoutes);
 app.use('/api/property-types', propertyTypeRoutes);
 app.use('/api/booking', bookingRoutes);
 app.use('/api/photos', photoRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Health check route
 app.get('/', (req, res) => {

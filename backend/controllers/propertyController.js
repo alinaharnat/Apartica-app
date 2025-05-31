@@ -285,7 +285,6 @@ const getProperties = asyncHandler(async (req, res) => {
     if (city) {
       const cityDoc = await City.findOne({ name: city });
       if (!cityDoc) {
-        console.log(`City '${city}' not found`);
         return res.status(200).json([]);
       }
       filter.cityId = cityDoc._id;
@@ -298,7 +297,6 @@ const getProperties = asyncHandler(async (req, res) => {
       if (typeDocs.length > 0) {
         filter.propertyType = { $in: typeDocs.map(doc => doc._id) };
       } else {
-        console.log(`No PropertyType found for: ${propertyTypes.join(', ')}`);
         return res.status(200).json([]);
       }
     }
@@ -437,7 +435,6 @@ const getProperties = asyncHandler(async (req, res) => {
 
         const rooms = await Room.find(roomFilter);
         if (rooms.length === 0) {
-          console.log(`No rooms found for property ${property._id}`);
           return null;
         }
 
@@ -447,7 +444,6 @@ const getProperties = asyncHandler(async (req, res) => {
           const startDate = new Date(checkIn);
           const endDate = new Date(checkOut);
           if (isNaN(startDate) || isNaN(endDate)) {
-            console.log(`Invalid dates for property ${property._id}: checkIn=${checkIn}, checkOut=${checkOut}`);
             return null;
           }
           const bookings = await Booking.find({
@@ -458,7 +454,6 @@ const getProperties = asyncHandler(async (req, res) => {
           const unavailableRoomIds = bookings.map(booking => booking.roomId.toString());
           const availableRooms = rooms.filter(room => !unavailableRoomIds.includes(room._id.toString()));
           if (availableRooms.length === 0) {
-            console.log(`No available rooms for property ${property._id} on dates ${checkIn} to ${checkOut}`);
             return null;
           }
         }
@@ -470,8 +465,7 @@ const getProperties = asyncHandler(async (req, res) => {
     ).then(results => results.filter(property => property !== null));
 
 
-    
-    console.log('Filtered properties:', propertiesData.length);
+
     if (!propertiesData.length) {
       return res.status(200).json([]);
     }

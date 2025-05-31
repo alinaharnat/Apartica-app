@@ -43,29 +43,81 @@ const PropertyPage = () => {
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [error, setError] = useState(null);
   const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
+  const [isAddReviewModalOpen, setIsAddReviewModalOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [eligibleBookings, setEligibleBookings] = useState([]);
+  const [selectedBookingId, setSelectedBookingId] = useState('');
   const mapRef = useRef(null);
 
-  // Извлечение параметров из URL
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const urlGuests = parseInt(searchParams.get('guests')) || 1;
     const urlCheckIn = searchParams.get('checkIn') ? new Date(searchParams.get('checkIn')) : null;
     const urlCheckOut = searchParams.get('checkOut') ? new Date(searchParams.get('checkOut')) : null;
 
-    console.log('URL params:', { urlGuests, urlCheckIn, urlCheckOut });
+    console.log('Parsed URL params:', { urlGuests, urlCheckIn, urlCheckOut });
 
-    setGuests(urlGuests);
+    let newStartDate = startDate;
+    let newEndDate = endDate;
+    let newGuests = urlGuests;
+
     if (urlCheckIn && !isNaN(urlCheckIn.getTime())) {
-      const newStartDate = new Date(urlCheckIn);
+      newStartDate = new Date(urlCheckIn);
       newStartDate.setHours(0, 0, 0, 0);
-      setStartDate(newStartDate);
+      console.log('Set startDate:', newStartDate);
     }
     if (urlCheckOut && !isNaN(urlCheckOut.getTime())) {
-      const newEndDate = new Date(urlCheckOut);
+      newEndDate = new Date(urlCheckOut);
       newEndDate.setHours(0, 0, 0, 0);
-      setEndDate(newEndDate);
+      console.log('Set endDate:', newEndDate);
     }
-  }, [location.search]);
+
+    setGuests(newGuests);
+    setStartDate(newStartDate);
+    setEndDate(newEndDate);
+
+    const fetchAvailableRooms = async () => {
+      try {
+        console.log('Fetching rooms with params:', { startDate: newStartDate, endDate: newEndDate, guests: newGuests });
+        const response = await axios.get(`/api/properties/${id}/available-rooms`, {
+          params: {
+            startDate: newStartDate.toISOString(),
+            endDate: newEndDate.toISOString(),
+            guests: newGuests
+          },
+        });
+        const rooms = response.data;
+        console.log('Raw rooms from API:', rooms);
+        const filteredRooms = rooms.filter(room => {
+          const isSuitable = room.maxGuests >= newGuests;
+          console.log(`Room ${room._id}: maxGuests=${room.maxGuests}, suitable=${isSuitable}`);
+          return isSuitable;
+        });
+        console.log('Filtered rooms:', filteredRooms);
+        setAvailableRooms(filteredRooms);
+        if (filteredRooms.length) {
+          const cheapestRoom = filteredRooms.reduce((min, room) =>
+            room.pricePerNight < min.pricePerNight ? room : min
+          );
+          console.log('Selected cheapest room:', cheapestRoom);
+          setSelectedRoom(cheapestRoom);
+        } else {
+          console.log('No suitable rooms found');
+          setSelectedRoom(null);
+        }
+      } catch (err) {
+        console.error('Failed to fetch available rooms:', err);
+        setError(`Failed to fetch available rooms: ${err.message}`);
+      }
+    };
+
+    if (newStartDate && newEndDate && newGuests && !isNaN(newStartDate.getTime()) && !isNaN(newEndDate.getTime())) {
+      fetchAvailableRooms();
+    } else {
+      console.log('Invalid date or guest params:', { startDate: newStartDate, endDate: newEndDate, guests: newGuests });
+    }
+  }, [id, location.search]);
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
@@ -101,22 +153,31 @@ const PropertyPage = () => {
   useEffect(() => {
     const fetchAvailableRooms = async () => {
       try {
+        console.log('Fetching rooms with params:', { startDate, endDate, guests });
         const response = await axios.get(`/api/properties/${id}/available-rooms`, {
-          params: { 
-            startDate: startDate.toISOString(), 
-            endDate: endDate.toISOString(), 
-            guests 
+          params: {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            guests
           },
         });
         const rooms = response.data;
-        console.log('Available rooms:', rooms);
-        setAvailableRooms(rooms);
-        if (rooms.length) {
-          const cheapestRoom = rooms.reduce((min, room) =>
+        console.log('Raw rooms from API:', rooms);
+        const filteredRooms = rooms.filter(room => {
+          const isSuitable = room.maxGuests >= guests;
+          console.log(`Room ${room._id}: maxGuests=${room.maxGuests}, suitable=${isSuitable}`, `guests: ${guests}`);
+          return isSuitable;
+        });
+        console.log('Filtered rooms:', filteredRooms);
+        setAvailableRooms(filteredRooms);
+        if (filteredRooms.length) {
+          const cheapestRoom = filteredRooms.reduce((min, room) =>
             room.pricePerNight < min.pricePerNight ? room : min
           );
+          console.log('Selected cheapest room:', cheapestRoom);
           setSelectedRoom(cheapestRoom);
         } else {
+          console.log('No suitable rooms found');
           setSelectedRoom(null);
         }
       } catch (err) {
@@ -126,6 +187,8 @@ const PropertyPage = () => {
     };
     if (startDate && endDate && guests && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
       fetchAvailableRooms();
+    } else {
+      console.log('Invalid date or guest params:', { startDate, endDate, guests });
     }
   }, [id, startDate, endDate, guests]);
 
@@ -190,6 +253,119 @@ const PropertyPage = () => {
     setSelectedRoom(room);
   };
 
+  const handleAddReviewClick = async () => {
+    if (!user) {
+      alert('You need to sign in to add a review.');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('No authentication token found. Please sign in again.');
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setUser(null);
+        navigate('/login');
+        return;
+      }
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
+
+      const response = await axios.get(`/api/reviews/eligible-bookings/${id}`, { headers });
+      const bookings = response.data;
+      console.log('Eligible bookings:', bookings);
+
+      if (!bookings.length) {
+        alert('Only users who have stayed at this property and have eligible bookings can add a review.');
+        return;
+      }
+
+      setEligibleBookings(bookings);
+      setSelectedBookingId(bookings[0]._id);
+      setIsAddReviewModalOpen(true);
+    } catch (err) {
+      console.error('Failed to fetch eligible bookings:', err);
+      if (err.response?.status === 401) {
+        alert('Your session has expired. Please sign in again.');
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setUser(null);
+        navigate('/login');
+      } else {
+        alert(`Failed to verify eligibility: ${err.response?.data?.message || err.message}`);
+      }
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    const rating = parseInt(reviewRating);
+    if (!rating || rating < 1 || rating > 10) {
+      alert('Please enter a valid rating between 1 and 10.');
+      return;
+    }
+    if (!selectedBookingId) {
+      alert('Please select a booking.');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('No authentication token found. Please sign in again.');
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setUser(null);
+        navigate('/login');
+        return;
+      }
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+
+      const response = await axios.post(
+        '/api/reviews',
+        {
+          bookingId: selectedBookingId,
+          propertyId: id,
+          overallRating: rating,
+          comment: reviewComment.trim() || undefined,
+        },
+        { headers }
+      );
+      const newReview = response.data;
+      console.log('New review added:', newReview);
+
+      setProperty((prev) => ({
+        ...prev,
+        reviews: [...(prev.reviews || []), newReview],
+        averageRating: newReview.averageRating || prev.averageRating, // Оновлюємо averageRating
+      }));
+
+      setReviewRating('');
+      setReviewComment('');
+      setSelectedBookingId(null);
+      setEligibleBookings([]);
+      setIsAddReviewModalOpen(false);
+      alert('Review uploaded successfully!');
+    } catch (err) {
+      console.error('Failed to submit review:', err);
+      if (err.response?.status === 401) {
+        alert('Your session has expired. Please sign in again.');
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setUser(null);
+        navigate('/login');
+      } else {
+        alert(`Failed to submit review: ${err.response?.data?.message || err.message}`);
+      }
+    }
+  };
+
   const formatReviewDate = (date) => {
     const today = new Date();
     const reviewDate = new Date(date);
@@ -234,7 +410,6 @@ const PropertyPage = () => {
       <Navbar user={user} />
 
       <main className="max-w-6xl mx-auto px-4 py-8 pt-24 space-y-4 flex-grow relative z-0">
-        {/* Заголовок та кнопка Share */}
         <div className="flex items-center gap-2">
           <h1 className="text-3xl font-bold">{property.title}</h1>
           <button onClick={handleShare} className="p-2 rounded-full hover:bg-gray-100">
@@ -242,7 +417,6 @@ const PropertyPage = () => {
           </button>
         </div>
 
-        {/* Адреса з іконкою */}
         <div className="flex items-center gap-2">
           <img src="/mapspointer.png" alt="Location" className="w-5 h-5" />
           <p
@@ -250,14 +424,10 @@ const PropertyPage = () => {
             onClick={() => setIsMapOpen(true)}
           >
             {property.address}
-            {property.city?.name ? `, ${property.city.name}` : ''}
-            {property.city?.country?.name ? `, ${property.city.country.name}` : ''}
           </p>
         </div>
 
-        {/* Фото, деталі бронювання та міні-карта */}
         <div className="flex gap-6">
-          {/* Фото */}
           <div className="w-2/3 grid grid-cols-5 gap-2">
             {property.photos?.slice(0, 8).map((photo, idx) => (
               <div
@@ -289,9 +459,7 @@ const PropertyPage = () => {
             ))}
           </div>
 
-          {/* Деталі бронювання та міні-карта */}
           <div className="w-1/3 space-y-6">
-            {/* Деталі бронювання */}
             <div className="w-full bg-white p-6 rounded-xl shadow-lg z-50 mr-4">
               <div className="flex items-center mb-4 gap-2">
                 <div>
@@ -367,7 +535,6 @@ const PropertyPage = () => {
               </button>
             </div>
 
-            {/* Міні-карта */}
             <div className="w-full h-64">
               <GoogleMap
                 mapContainerStyle={mapContainerStyle}
@@ -406,7 +573,6 @@ const PropertyPage = () => {
           </GoogleMap>
         </BaseModal>
 
-        {/* Зручності */}
         <div className="w-2/3 flex flex-wrap gap-3 mt-4">
           {property.amenities?.map(amenity => (
             <span
@@ -419,7 +585,6 @@ const PropertyPage = () => {
           ))}
         </div>
 
-        {/* Опис та рейтинг */}
         <div className="flex gap-6 mt-4">
           <div className="w-2/3">
             <h2 className="text-2xl font-semibold h-8 flex items-center leading-none mb-4">Information</h2>
@@ -434,7 +599,6 @@ const PropertyPage = () => {
           </div>
         </div>
 
-        {/* Кімнати */}
         <div className="mt-4">
           <h2 className="text-2xl font-semibold mb-4">Available Room Types</h2>
           {availableRooms.length > 0 ? (
@@ -479,24 +643,37 @@ const PropertyPage = () => {
           )}
         </div>
 
-        {/* Відгуки */}
         <div className="mt-4">
-          <h2 className="text-2xl font-semibold mb-4">Guest Reviews</h2>
-          <div className="flex gap-4">
-            {[...property.reviews]
-              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-              .slice(0, 2)
-              .map(review => (
-                <div key={review._id} className="w-1/2 border rounded-lg p-4 shadow-sm bg-white">
-                  <div className="flex justify-between items-center mb-2">
-                    <p className="font-medium">{review.userDisplayName}</p>
-                    <p className="text-gray-500 text-sm">{formatReviewDate(review.createdAt)}</p>
-                  </div>
-                  <p className="text-gray-700">{review.comment}</p>
-                  <p className="mt-2">Rating: {review.rating}/10</p>
-                </div>
-              ))}
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold">Guest Reviews</h2>
+            <button
+              onClick={handleAddReviewClick}
+              className="text-black font-bold underline"
+            >
+              Add Review
+            </button>
           </div>
+          {property.reviews?.length > 0 ? (
+            <div className="flex gap-4">
+              {[...property.reviews]
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, 2)
+                .map(review => (
+                  <div key={review._id} className="w-1/2 border rounded-lg p-4 shadow-sm bg-white">
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="font-medium">{review.userDisplayName}</p>
+                      <p className="text-gray-500 text-sm">{formatReviewDate(review.createdAt)}</p>
+                    </div>
+                    <p className="text-gray-700">{review.comment}</p>
+                    <p className="mt-2">Rating: {review.rating}/10</p>
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <p className="text-center text-gray-500">
+              This property has not received any reviews yet. But you can add one, if you have already stayed here.
+            </p>
+          )}
           {property.reviews?.length > 2 && (
             <button
               onClick={() => setIsReviewsModalOpen(true)}
@@ -527,7 +704,66 @@ const PropertyPage = () => {
           </div>
         </BaseModal>
 
-        {/* Правила */}
+        <BaseModal isOpen={isAddReviewModalOpen} onClose={() => setIsAddReviewModalOpen(false)}>
+          <div className="p-6">
+            <h2 className="text-2xl font-semibold mb-4">Add Your Review</h2>
+            <div className="space-y-4">
+              {eligibleBookings.length > 1 && (
+                <div>
+                  <label className="block text-gray-700 mb-1">Select Booking</label>
+                  <select
+                    value={selectedBookingId}
+                    onChange={(e) => setSelectedBookingId(e.target.value)}
+                    className="w-full border rounded-lg p-2"
+                  >
+                    {eligibleBookings.map(booking => (
+                      <option key={booking._id} value={booking._id}>
+                        {new Date(booking.checkIn).toLocaleDateString()} - {new Date(booking.checkOut).toLocaleDateString()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="block text-gray-700 mb-1">Rating (1–10)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={reviewRating}
+                  onChange={(e) => setReviewRating(e.target.value)}
+                  className="w-full border rounded-lg p-2"
+                  placeholder="Enter rating"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-1">Comment (optional)</label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  className="w-full border rounded-lg p-2"
+                  rows="4"
+                  placeholder="Share your experience"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setIsAddReviewModalOpen(false)}
+                  className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitReview}
+                  className="px-4 py-2 bg-[#8252A1] text-white rounded-lg hover:bg-[#6f4587]"
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        </BaseModal>
+
         <div className="mt-4">
           <h2 className="text-2xl font-semibold mb-4">House Rules</h2>
           <ul className="space-y-3 text-gray-700">
