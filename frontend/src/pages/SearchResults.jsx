@@ -40,10 +40,27 @@ const SearchResults = () => {
     const params = new URLSearchParams(location.search);
     const searchData = {
       location: params.get('location') || '',
-      checkIn: params.get('checkIn') ? new Date(params.get('checkIn')) : null,
-      checkOut: params.get('checkOut') ? new Date(params.get('checkOut')) : null,
       guests: params.get('guests') || 1,
     };
+  
+    // Обрабатываем даты
+    const checkInParam = params.get('checkIn');
+    const checkOutParam = params.get('checkOut');
+    
+    if (checkInParam) {
+      const [year, month, day] = checkInParam.split('-');
+      searchData.checkIn = new Date(year, month - 1, day);
+    } else {
+      searchData.checkIn = null;
+    }
+  
+    if (checkOutParam) {
+      const [year, month, day] = checkOutParam.split('-');
+      searchData.checkOut = new Date(year, month - 1, day);
+    } else {
+      searchData.checkOut = null;
+    }
+  
     setSearchParams(searchData);
     setDestination(searchData.location);
     setCheckIn(searchData.checkIn);
@@ -70,16 +87,38 @@ const SearchResults = () => {
     e.preventDefault();
     const params = new URLSearchParams();
     params.append('location', destination);
-    if (checkIn) params.append('checkIn', checkIn.toISOString().split('T')[0]); // e.g., "2025-05-31"
-    if (checkOut) params.append('checkOut', checkOut.toISOString().split('T')[0]); // e.g., "2025-06-01"
+    
+    if (checkIn) {
+      const localDate = new Date(checkIn);
+      localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+      params.append('checkIn', localDate.toISOString().split('T')[0]);
+    }
+    
+    if (checkOut) {
+      const localDate = new Date(checkOut);
+      localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+      params.append('checkOut', localDate.toISOString().split('T')[0]);
+    }
+    
     params.append('guests', guests);
     navigate(`/search?${params.toString()}`);
   };
   
   const handleHotelClick = (propertyId) => {
     const params = new URLSearchParams();
-    if (checkIn) params.append('checkIn', checkIn.toISOString().split('T')[0]);
-    if (checkOut) params.append('checkOut', checkOut.toISOString().split('T')[0]);
+    
+    if (checkIn) {
+      const localDate = new Date(checkIn);
+      localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+      params.append('checkIn', localDate.toISOString().split('T')[0]);
+    }
+    
+    if (checkOut) {
+      const localDate = new Date(checkOut);
+      localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+      params.append('checkOut', localDate.toISOString().split('T')[0]);
+    }
+    
     if (guests) params.append('guests', guests);
     navigate(`/properties/${propertyId}?${params.toString()}`);
   };
@@ -184,10 +223,6 @@ const SearchResults = () => {
         <div className="flex flex-col md:flex-row gap-12">
           {/* Map and Filters */}
           <aside className="w-full md:w-1/4">
-            {/* Map Placeholder */}
-            <div className="bg-gray-200 h-64 rounded-lg mb-8 flex items-center justify-center">
-              <p className="text-gray-500">Map Placeholder (e.g., Google Maps)</p>
-            </div>
 
             {/* Filters */}
             <div className="bg-white p-8 rounded-xl shadow-lg sticky top-24">
