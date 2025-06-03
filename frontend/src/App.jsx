@@ -17,6 +17,8 @@ import PaymentStatusPage from './pages/PaymentStatusPage';
 import PropertyManagementPage from './pages/PropertyManagementPage';
 import BookingManagementPage from './pages/BookingManagementPage';
 import SearchResults from './pages/SearchResults';
+import SubscriptionPlansPage from './pages/SubscriptionPlansPage'; // Add this import
+import PaymentSuccess from './pages/PaymentSuccess';
 
 const App = () => {
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState(null);
@@ -78,6 +80,8 @@ const App = () => {
         <Route path="/payment-status" element={<PaymentStatusPage />} />
         <Route path="/admin/properties" element={<PropertyManagementPage />} />
         <Route path="/admin/bookings" element={<BookingManagementPage />} />
+        <Route path="/subscription" element={<SubscriptionPlansPage />} />
+        <Route path="/payment-success" element={<PaymentSuccess />} />
       </Routes>
     </LoadScript>
   );
