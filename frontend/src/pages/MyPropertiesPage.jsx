@@ -54,7 +54,7 @@ const MyPropertiesPage = () => {
 
       switch (action) {
         case 'view':
-          navigate(`/property/${propertyId}`);
+          navigate(`/properties/${propertyId}`);
           break;
         case 'delete':
           if (window.confirm('Are you sure you want to delete this property?')) {
@@ -70,6 +70,10 @@ const MyPropertiesPage = () => {
       console.error(`Failed to ${action} property:`, error);
       alert(`Failed to ${action} property: ${error.response?.data?.message || 'Server error'}`);
     }
+  };
+
+  const handleViewProperty = (propertyId) => {
+    navigate(`/properties/${propertyId}`);
   };
 
   useEffect(() => {
