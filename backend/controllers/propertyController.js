@@ -278,7 +278,6 @@ const getProperties = asyncHandler(async (req, res) => {
     sort = '-positiveReviewCount,-averageRating', // Updated default sort
   } = req.query;
 
-  console.log('Received query:', req.query); // Log incoming query
 
   try {
     const filter = { isListed: true };
@@ -287,7 +286,6 @@ const getProperties = asyncHandler(async (req, res) => {
     if (city) {
       const cityDoc = await City.findOne({ name: { $regex: `^${city}$`, $options: 'i' } });
       if (!cityDoc) {
-        console.log(`No city found for name: ${city}`);
         return res.status(200).json([]);
       }
       filter.cityId = cityDoc._id;
@@ -300,7 +298,6 @@ const getProperties = asyncHandler(async (req, res) => {
       if (typeDocs.length > 0) {
         filter.propertyType = { $in: typeDocs.map(doc => doc._id) };
       } else {
-        console.log(`No property types found for: ${propertyTypes}`);
         return res.status(200).json([]);
       }
     }
@@ -312,7 +309,6 @@ const getProperties = asyncHandler(async (req, res) => {
       if (amenityDocs.length > 0) {
         filter.amenities = { $all: amenityDocs.map(doc => doc._id) };
       } else {
-        console.log(`No amenities found for: ${amenityNames}`);
         return res.status(200).json([]);
       }
     }
@@ -336,8 +332,6 @@ const getProperties = asyncHandler(async (req, res) => {
       sortFields.averageRating = -1;
     }
 
-    console.log('MongoDB filter:', filter); // Log filter
-    console.log('MongoDB sort:', sortFields); // Log sort
 
     // Aggregation pipeline
     const pipeline = [
@@ -417,7 +411,6 @@ const getProperties = asyncHandler(async (req, res) => {
 
         const rooms = await Room.find(roomFilter);
         if (rooms.length === 0) {
-          console.log(`No rooms found for property ${property._id}`);
           return null;
         }
 
@@ -426,7 +419,6 @@ const getProperties = asyncHandler(async (req, res) => {
           const startDate = new Date(checkIn);
           const endDate = new Date(checkOut);
           if (isNaN(startDate) || isNaN(endDate)) {
-            console.log(`Invalid dates: checkIn=${checkIn}, checkOut=${checkOut}`);
             return null;
           }
           const bookings = await Booking.find({
@@ -439,7 +431,6 @@ const getProperties = asyncHandler(async (req, res) => {
           const unavailableRoomIds = bookings.map(booking => booking.roomId.toString());
           availableRooms = rooms.filter(room => !unavailableRoomIds.includes(room._id.toString()));
           if (availableRooms.length === 0) {
-            console.log(`No available rooms for property ${property._id}`);
             return null;
           }
         }
@@ -459,7 +450,6 @@ const getProperties = asyncHandler(async (req, res) => {
       })
     ).then(results => results.filter(property => property !== null));
 
-    console.log(`Returning ${propertiesData.length} properties`);
 
     if (!propertiesData.length) {
       return res.status(200).json([]);

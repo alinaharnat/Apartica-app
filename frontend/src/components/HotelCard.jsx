@@ -123,7 +123,17 @@ const HotelCard = ({ searchParams, filters }) => {
                 <span className="bg-purple-600 text-white text-xs font-semibold px-2.5 py-0.5 rounded">
                   {property.averageRating?.toFixed(1) || 'N/A'}
                 </span>
-                <span className="ml-2 text-sm text-gray-600">Excellent</span>
+                <span className="ml-2 text-sm text-gray-600">
+                  {property.averageRating >= 9
+                    ? 'Wonderful'
+                    : property.averageRating >= 8
+                      ? 'Very Good'
+                      : property.averageRating >= 7
+                        ? 'Good'
+                        : property.averageRating >= 6
+                          ? 'Pleasant'
+                          : 'No rating'}
+                </span>
               </div>
               <p className="mt-2 text-gray-600">
                 Starting from €{property.pricePerNight || 'N/A'}
