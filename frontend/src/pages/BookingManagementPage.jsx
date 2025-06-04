@@ -70,7 +70,14 @@ const BookingManagementPage = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/admin/bookings', {
+      const userData = JSON.parse(localStorage.getItem('user'));
+      
+      // Use different endpoints based on user role
+      const endpoint = userData.userType === 'Admin' 
+        ? '/api/admin/bookings'
+        : `/api/bookings/user/${userData.userId}`;
+        
+      const res = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setBookings(res.data);
