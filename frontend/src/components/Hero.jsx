@@ -154,7 +154,7 @@ const Hero = () => {
   
     if (Object.keys(validationErrors).length === 0) {
       const params = new URLSearchParams();
-      params.append('location', destination);
+      params.append('city', destination);
       
       if (checkIn) {
         // Создаем дату в локальном времени и форматируем как YYYY-MM-DD
