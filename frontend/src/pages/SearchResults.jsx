@@ -6,7 +6,7 @@ import Footer from '../components/Footer';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import enGB from 'date-fns/locale/en-GB';
 import cn from 'classnames';
-import axios from 'axios'; 
+import axios from 'axios';
 import 'react-datepicker/dist/react-datepicker.css';
 
 registerLocale('en-GB', enGB);
@@ -25,19 +25,19 @@ const SearchResults = () => {
   const navigate = useNavigate();
   const [filters, setFilters] = useState({
     priceRange: [0, 1000],
+    ratingRange: [0, 10],
     type: [],
-    reviewScore: [],
     amenities: [],
   });
   const [tempFilters, setTempFilters] = useState({
-    priceRange: [0, 1000],
+    priceRange: ['', ''],
+    ratingRange: ['', ''],
     type: [],
-    reviewScore: [],
     amenities: [],
   });
   const [searchParams, setSearchParams] = useState({});
   const [user, setUser] = useState(null);
-  const [sortOption, setSortOption] = useState('our-top-picks');
+  const [sortOption, setSortOption] = useState('price-low-to-high');
   const [city, setCity] = useState('');
   const [checkIn, setCheckIn] = useState(null);
   const [checkOut, setCheckOut] = useState(null);
@@ -47,6 +47,9 @@ const SearchResults = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filteredProperties, setFilteredProperties] = useState([]);
+  const [allProperties, setAllProperties] = useState([]);
+  const [maxPrice, setMaxPrice] = useState(1000);
+  const [showAllAmenities, setShowAllAmenities] = useState(false);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -57,66 +60,11 @@ const SearchResults = () => {
       setUser(JSON.parse(stored));
     }
   }, []);
-  const fetchAndFilterProperties = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get('/api/properties');
-      let properties = response.data;
-  
-      // Применяем фильтры
-      properties = properties.filter(property => {
-        const matchesCity = !city || 
-          (property.cityId?.name && property.cityId.name.toLowerCase().includes(city.toLowerCase()));
-        const matchesPrice = property.pricePerNight >= tempFilters.priceRange[0] && 
-          property.pricePerNight <= tempFilters.priceRange[1];
-          const getMinRating = () => {
-            if (tempFilters.reviewScore.length === 0) return 0;
-            const minRatings = tempFilters.reviewScore.map(s => 
-              reviewScoreOptions.find(o => o.value === s)?.minRating || 0
-            );
-            return Math.min(...minRatings);
-          };
-          
-          const matchesRating = property.averageRating >= getMinRating();
-        
-        // Фильтрация по типам и удобствам
-        const matchesType = tempFilters.type.length === 0 || 
-          (property.type && tempFilters.type.includes(property.type));
-        const matchesAmenities = tempFilters.amenities.length === 0 || 
-          (property.amenities && tempFilters.amenities.every(a => property.amenities.includes(a)));
-  
-        return matchesCity && matchesPrice && matchesRating && matchesType && matchesAmenities;
-      });
-  
-      // Применяем сортировку
-      properties.sort((a, b) => {
-        switch (sortOption) {
-          case 'price-low-to-high': return a.pricePerNight - b.pricePerNight;
-          case 'price-high-to-low': return b.pricePerNight - a.pricePerNight;
-          case 'rating': return b.averageRating - a.averageRating;
-          default: return (b.positiveReviewCount - a.positiveReviewCount) || 
-                        (b.averageRating - a.averageRating);
-        }
-      });
-  
-      setFilteredProperties(properties);
-    } catch (error) {
-      console.error('Error:', error);
-      setError('Failed to load properties');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  useEffect(() => {
-    fetchAndFilterProperties();
-  }, [tempFilters, sortOption, city]); // Используем tempFilters вместо filters
 
   // Fetch amenities and property types
   useEffect(() => {
     const fetchFormData = async () => {
       try {
-        setLoading(true);
         const response = await fetch('/api/properties/form-data');
         if (!response.ok) throw new Error('Failed to fetch form data');
         const data = await response.json();
@@ -124,31 +72,132 @@ const SearchResults = () => {
         setPropertyTypesList(data.propertyTypes || []);
       } catch (err) {
         setError(err.message);
-      } finally {
-        setLoading(false);
       }
     };
     fetchFormData();
   }, []);
 
-  // Parse URL parameters
+  // Fetch properties with search parameters
+  const fetchPropertiesWithSearch = async (searchCity, searchCheckIn, searchCheckOut, searchGuests, appliedFilters = {}) => {
+    try {
+      setLoading(true);
+      const params = {};
+
+      if (searchCity) params.city = searchCity;
+      if (searchCheckIn && !isNaN(searchCheckIn.getTime())) {
+        const localDate = new Date(searchCheckIn);
+        localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+        params.checkIn = localDate.toISOString().split('T')[0];
+      }
+      if (searchCheckOut && !isNaN(searchCheckOut.getTime())) {
+        const localDate = new Date(searchCheckOut);
+        localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+        params.checkOut = localDate.toISOString().split('T')[0];
+      }
+      if (searchGuests) params.guests = searchGuests;
+
+      // Add filter parameters
+      if (appliedFilters.priceRange) {
+        params.minPrice = appliedFilters.priceRange[0] || 0;
+        params.maxPrice = appliedFilters.priceRange[1] || undefined;
+      }
+      if (appliedFilters.ratingRange) {
+        params.minRating = appliedFilters.ratingRange[0] || 0;
+        params.maxRating = appliedFilters.ratingRange[1] || 10;
+      }
+      if (appliedFilters.type?.length) params.type = appliedFilters.type.join(',');
+      if (appliedFilters.amenities?.length) params.amenities = appliedFilters.amenities.join(',');
+
+      const response = await axios.get('/api/properties', { params });
+      const properties = response.data;
+      setAllProperties(properties);
+
+      // Update max price
+      const prices = properties.map(p => p.pricePerNight).filter(p => p);
+      const calculatedMaxPrice = prices.length > 0 ? Math.max(...prices) : 1000;
+      //setMaxPrice(calculatedMaxPrice);
+
+      return properties;
+    } catch (error) {
+      console.error('Error:', error);
+      setError('Failed to load properties');
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Apply filters to properties (frontend fallback)
+  const applyFiltersToProperties = (properties, appliedFilters) => {
+    return properties.filter(property => {
+      const matchesCity = !city ||
+        (property.cityId?.name && property.cityId.name.toLowerCase().includes(city.toLowerCase()));
+
+      const matchesPrice = property.pricePerNight >= appliedFilters.priceRange[0] &&
+        property.pricePerNight <= appliedFilters.priceRange[1];
+
+      const matchesRating = property.averageRating >= appliedFilters.ratingRange[0] &&
+        property.averageRating <= appliedFilters.ratingRange[1];
+
+      const matchesType = appliedFilters.type.length === 0 ||
+        (property.propertyType?.name && appliedFilters.type.includes(property.propertyType.name));
+
+      const matchesAmenities = appliedFilters.amenities.length === 0 ||
+        (property.amenities && appliedFilters.amenities.every(a => property.amenities.includes(a)));
+
+      return matchesCity && matchesPrice && matchesRating && matchesType && matchesAmenities;
+    });
+  };
+
+  // Sort properties
+  const sortProperties = (properties, sortBy) => {
+    return [...properties].sort((a, b) => {
+      switch (sortBy) {
+        case 'price-low-to-high':
+          return a.pricePerNight - b.pricePerNight;
+        case 'price-high-to-low':
+          return b.pricePerNight - a.pricePerNight;
+        case 'rating':
+          return b.averageRating - a.averageRating;
+        default:
+          return a.pricePerNight - b.pricePerNight; // Changed default to price-low-to-high
+      }
+    });
+  };
+
+  // Update filtered properties
+  const updateFilteredProperties = () => {
+    const filtered = applyFiltersToProperties(allProperties, filters);
+    const sorted = sortProperties(filtered, sortOption);
+    setFilteredProperties(sorted);
+  };
+
+  // Update results on filters or sort change
+  useEffect(() => {
+    if (allProperties.length > 0) {
+      updateFilteredProperties();
+    }
+  }, [filters, sortOption, allProperties]);
+
+  // Parse URL parameters and perform initial search
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const searchData = {
-      city: params.get('city') || '', 
+      city: params.get('city') || '',
       guests: params.get('guests') || '1',
       checkIn: params.get('checkIn') ? new Date(params.get('checkIn')) : null,
       checkOut: params.get('checkOut') ? new Date(params.get('checkOut')) : null,
       amenities: params.get('amenities')?.split(',').filter(Boolean) || [],
       type: params.get('type')?.split(',').filter(Boolean) || [],
-      reviewScore: params.get('reviewScore')?.split(',').filter(Boolean) || [],
       priceRange: params.get('priceRange')
         ? params.get('priceRange').split(',').map(Number)
-        : [0, 1000],
-      sort: params.get('sort') || 'our-top-picks',
+        : [0, maxPrice],
+      ratingRange: params.get('ratingRange')
+        ? params.get('ratingRange').split(',').map(Number)
+        : [0, 10],
+      sort: params.get('sort') || 'price-low-to-high',
     };
 
-    // Validate dates
     if (searchData.checkIn && isNaN(searchData.checkIn.getTime())) searchData.checkIn = null;
     if (searchData.checkOut && isNaN(searchData.checkOut.getTime())) searchData.checkOut = null;
 
@@ -158,51 +207,61 @@ const SearchResults = () => {
     setCheckOut(searchData.checkOut);
     setGuests(searchData.guests);
     setSortOption(searchData.sort);
-    setFilters({
+
+    // Apply filters from URL if present
+    const appliedFilters = {
       priceRange: searchData.priceRange,
+      ratingRange: searchData.ratingRange,
       type: searchData.type,
-      reviewScore: searchData.reviewScore,
       amenities: searchData.amenities,
-    });
+    };
+    setFilters(appliedFilters);
     setTempFilters({
-      priceRange: searchData.priceRange,
+      priceRange: [searchData.priceRange[0].toString(), searchData.priceRange[1].toString()],
+      ratingRange: [searchData.ratingRange[0].toString(), searchData.ratingRange[1].toString()],
       type: searchData.type,
-      reviewScore: searchData.reviewScore,
       amenities: searchData.amenities,
     });
-    console.log('Parsed searchParams:', searchData);
-  }, [location.search]);
+
+    // Fetch properties
+    fetchPropertiesWithSearch(
+      searchData.city,
+      searchData.checkIn,
+      searchData.checkOut,
+      searchData.guests,
+      appliedFilters
+    ).then(properties => updateFilteredProperties(properties, appliedFilters));
+
+  }, [location.search, maxPrice]);
 
   // Debounced URL update
-  const updateUrl = useCallback(
-    debounce((params) => {
-      const urlParams = new URLSearchParams();
-      if (params.city) urlParams.append('city', params.city); 
-      if (params.checkIn && !isNaN(params.checkIn.getTime())) {
-        const localDate = new Date(params.checkIn);
+  const updateUrlWithFilters = useCallback(
+    debounce((appliedFilters) => {
+      const params = new URLSearchParams();
+      if (city) params.append('city', city);
+      if (checkIn && !isNaN(checkIn.getTime())) {
+        const localDate = new Date(checkIn);
         localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
-        urlParams.append('checkIn', localDate.toISOString().split('T')[0]);
+        params.append('checkIn', localDate.toISOString().split('T')[0]);
       }
-      if (params.checkOut && !isNaN(params.checkOut.getTime())) {
-        const localDate = new Date(params.checkOut);
+      if (checkOut && !isNaN(checkOut.getTime())) {
+        const localDate = new Date(checkOut);
         localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
-        urlParams.append('checkOut', localDate.toISOString().split('T')[0]);
+        params.append('checkOut', localDate.toISOString().split('T')[0]);
       }
-      if (params.guests) urlParams.append('guests', params.guests);
-      if (params.amenities?.length) urlParams.append('amenities', params.amenities.join(','));
-      if (params.type?.length) urlParams.append('type', params.type.join(','));
-      if (params.priceRange) urlParams.append('priceRange', params.priceRange.join(','));
-      if (params.reviewScore?.length) urlParams.append('reviewScore', params.reviewScore.join(','));
+      if (guests) params.append('guests', guests);
+      if (appliedFilters.amenities?.length) params.append('amenities', appliedFilters.amenities.join(','));
+      if (appliedFilters.type?.length) params.append('type', appliedFilters.type.join(','));
+      if (appliedFilters.priceRange) params.append('priceRange', appliedFilters.priceRange.join(','));
+      if (appliedFilters.ratingRange) params.append('ratingRange', appliedFilters.ratingRange.join(','));
 
-      // Ensure sort is valid
-      const validSorts = ['our-top-picks', 'price-low-to-high', 'price-high-to-low', 'rating'];
-      urlParams.append('sort', validSorts.includes(params.sort) ? params.sort : 'our-top-picks');
+      const validSorts = ['price-low-to-high', 'price-high-to-low', 'rating'];
+      params.append('sort', validSorts.includes(sortOption) ? sortOption : 'price-low-to-high');
 
-      const newUrl = `/search?${urlParams.toString()}`;
-      navigate(newUrl, { replace: true }); // Use replace to avoid stacking history
-      console.log('Updated URL:', newUrl);
+      const newUrl = `/search?${params.toString()}`;
+      navigate(newUrl, { replace: true });
     }, 300),
-    [navigate]
+    [navigate, city, checkIn, checkOut, guests, sortOption]
   );
 
   // Handle filter changes
@@ -218,31 +277,73 @@ const SearchResults = () => {
       return { ...prev, [name]: value };
     });
   };
+
+  // Apply filters
   const applyFilters = () => {
-    setFilters(tempFilters);
-    updateUrl({ 
-      ...searchParams, 
-      ...tempFilters, 
-      city, 
-      checkIn, 
-      checkOut, 
-      guests, 
-      sort: sortOption 
-    });
-    fetchAndFilterProperties();
+    const minPrice = tempFilters.priceRange[0] === '' ? 0 : parseInt(tempFilters.priceRange[0]) || 0;
+    const maxPriceValue = tempFilters.priceRange[1] === '' ? maxPrice : parseInt(tempFilters.priceRange[1]) || maxPrice;
+
+    const minRating = tempFilters.ratingRange[0] === '' ? 0 : parseFloat(tempFilters.ratingRange[0]) || 0;
+    const maxRating = tempFilters.ratingRange[1] === '' ? 10 : parseFloat(tempFilters.ratingRange[1]) || 10;
+
+    const appliedFilters = {
+      priceRange: [minPrice, maxPriceValue],
+      ratingRange: [minRating, maxRating],
+      type: tempFilters.type,
+      amenities: tempFilters.amenities,
+    };
+
+    setFilters(appliedFilters);
+    fetchPropertiesWithSearch(city, checkIn, checkOut, guests, appliedFilters)
+      .then(properties => updateFilteredProperties(properties, appliedFilters));
+    updateUrlWithFilters(appliedFilters);
   };
 
-  const handleResetFilters = () => {
+  // Reset filters
+  const resetFilters = () => {
     const resetFilters = {
-      priceRange: [0, 1000],
+      priceRange: [0, maxPrice],
+      ratingRange: [0, 10],
       type: [],
-      reviewScore: [],
       amenities: [],
     };
-    setTempFilters(resetFilters);
     setFilters(resetFilters);
-    setSortOption('our-top-picks');
-    updateUrl({ ...resetFilters, city, checkIn, checkOut, guests, sort: 'our-top-picks' });
+    setTempFilters({
+      priceRange: ['0', maxPrice.toString()],
+      ratingRange: ['0', '10'],
+      type: [],
+      amenities: [],
+    });
+    return resetFilters;
+  };
+
+  // Handle reset filters
+  const handleResetFilters = () => {
+    const resetFiltersData = resetFilters();
+    const params = new URLSearchParams();
+    if (searchParams.city) params.append('city', searchParams.city);
+    if (searchParams.checkIn && !isNaN(searchParams.checkIn.getTime())) {
+      const localDate = new Date(searchParams.checkIn);
+      localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+      params.append('checkIn', localDate.toISOString().split('T')[0]);
+    }
+    if (searchParams.checkOut && !isNaN(searchParams.checkOut.getTime())) {
+      const localDate = new Date(searchParams.checkOut);
+      localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+      params.append('checkOut', localDate.toISOString().split('T')[0]);
+    }
+    if (searchParams.guests) params.append('guests', searchParams.guests);
+
+    const newUrl = `/search?${params.toString()}`;
+    navigate(newUrl, { replace: true });
+
+    fetchPropertiesWithSearch(
+      searchParams.city,
+      searchParams.checkIn,
+      searchParams.checkOut,
+      searchParams.guests,
+      resetFiltersData
+    ).then(properties => updateFilteredProperties(properties, resetFiltersData));
   };
 
   // Handle form submission
@@ -261,7 +362,40 @@ const SearchResults = () => {
       return;
     }
     setError(null);
-    updateUrl({ ...searchParams, ...filters, city, checkIn, checkOut, guests, sort: sortOption });
+
+    // Reset filters
+    const resetFiltersData = resetFilters();
+
+    // Create URL without filter params
+    const params = new URLSearchParams();
+    if (city) params.append('city', city);
+    if (checkIn && !isNaN(checkIn.getTime())) {
+      const localDate = new Date(checkIn);
+      localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+      params.append('checkIn', localDate.toISOString().split('T')[0]);
+    }
+    if (checkOut && !isNaN(checkOut.getTime())) {
+      const localDate = new Date(checkOut);
+      localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+      params.append('checkOut', localDate.toISOString().split('T')[0]);
+    }
+    if (guests) params.append('guests', guests);
+
+    const newUrl = `/search?${params.toString()}`;
+    navigate(newUrl, { replace: true });
+
+    // Fetch properties without filters
+    fetchPropertiesWithSearch(city, checkIn, checkOut, guests, resetFiltersData)
+      .then(properties => updateFilteredProperties(properties, resetFiltersData));
+  };
+
+  // Handle sort change
+  const handleSortChange = (newSort) => {
+    setSortOption(newSort);
+    const params = new URLSearchParams(location.search);
+    params.set('sort', newSort);
+    const newUrl = `/search?${params.toString()}`;
+    navigate(newUrl, { replace: true });
   };
 
   // Handle hotel click
@@ -287,13 +421,7 @@ const SearchResults = () => {
       err && 'border border-red-500 rounded'
     );
 
-  // Review score options
-  const reviewScoreOptions = [
-    { value: 'wonderful-9+', label: 'Wonderful: 9+', minRating: 9 },
-    { value: 'very-good-8+', label: 'Very Good: 8+', minRating: 8 },
-    { value: 'good-7+', label: 'Good: 7+', minRating: 7 },
-    { value: 'pleasant-6+', label: 'Pleasant: 6+', minRating: 6 },
-  ];
+  const displayedAmenities = showAllAmenities ? amenitiesList : amenitiesList.slice(0, 5);
 
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
@@ -413,11 +541,11 @@ const SearchResults = () => {
                   <input
                     type="number"
                     min="0"
-                    max={tempFilters.priceRange[1]}
+                    placeholder="Min"
                     value={tempFilters.priceRange[0]}
                     onChange={(e) =>
                       handleFilterChange('priceRange', [
-                        parseInt(e.target.value) || 0,
+                        e.target.value,
                         tempFilters.priceRange[1],
                       ])
                     }
@@ -425,21 +553,62 @@ const SearchResults = () => {
                   />
                   <input
                     type="number"
-                    min={tempFilters.priceRange[0]}
-                    max="1000"
+                    min="0"
+                    placeholder="Max"
                     value={tempFilters.priceRange[1]}
                     onChange={(e) =>
                       handleFilterChange('priceRange', [
                         tempFilters.priceRange[0],
-                        parseInt(e.target.value) || 1000,
+                        e.target.value,
                       ])
                     }
                     className="w-1/2 p-2 border rounded"
                   />
                 </div>
                 <div className="flex justify-between text-sm text-gray-500 mt-1">
-                  <span>€{tempFilters.priceRange[0]}</span>
-                  <span>€{tempFilters.priceRange[1]}</span>
+                  <span>€0</span>
+                  <span>€{maxPrice}</span>
+                </div>
+              </div>
+
+              {/* Rating */}
+              <div className="mb-6">
+                <label className="block font-medium text-gray-600 mb-2">Rating</label>
+                <div className="flex gap-4">
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    placeholder="Min"
+                    value={tempFilters.ratingRange[0]}
+                    onChange={(e) =>
+                      handleFilterChange('ratingRange', [
+                        e.target.value,
+                        tempFilters.ratingRange[1],
+                      ])
+                    }
+                    className="w-1/2 p-2 border rounded"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    placeholder="Max"
+                    value={tempFilters.ratingRange[1]}
+                    onChange={(e) =>
+                      handleFilterChange('ratingRange', [
+                        tempFilters.ratingRange[0],
+                        e.target.value,
+                      ])
+                    }
+                    className="w-1/2 p-2 border rounded"
+                  />
+                </div>
+                <div className="flex justify-between text-sm text-gray-500 mt-1">
+                  <span>0</span>
+                  <span>10</span>
                 </div>
               </div>
 
@@ -449,17 +618,28 @@ const SearchResults = () => {
                 {loading ? (
                   <p>Loading amenities...</p>
                 ) : amenitiesList.length > 0 ? (
-                  amenitiesList.map((amenity) => (
-                    <label key={amenity._id} className="flex items-center mb-2">
-                      <input
-                        type="checkbox"
-                        className="mr-2 accent-[#8252A1]"
-                        checked={tempFilters.amenities.includes(amenity.name)}
-                        onChange={() => handleFilterChange('amenities', amenity.name, true)}
-                      />
-                      {amenity.name}
-                    </label>
-                  ))
+                  <>
+                    {displayedAmenities.map((amenity) => (
+                      <label key={amenity._id} className="flex items-center mb-2">
+                        <input
+                          type="checkbox"
+                          className="mr-2 accent-[#8252A1]"
+                          checked={tempFilters.amenities.includes(amenity.name)}
+                          onChange={() => handleFilterChange('amenities', amenity.name, true)}
+                        />
+                        {amenity.name}
+                      </label>
+                    ))}
+                    {amenitiesList.length > 5 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllAmenities(!showAllAmenities)}
+                        className="text-sm text-[#8252A1] hover:underline mt-2"
+                      >
+                        {showAllAmenities ? 'Show Less' : `Show All (${amenitiesList.length})`}
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <p>No amenities available</p>
                 )}
@@ -487,21 +667,6 @@ const SearchResults = () => {
                 )}
               </div>
 
-              {/* Review Score */}
-              <div className="mb-6">
-                <h3 className="font-medium text-gray-600 mb-2">Review Score</h3>
-                {reviewScoreOptions.map((option) => (
-                  <label key={option.value} className="flex items-center mb-2">
-                    <input
-                      type="checkbox"
-                      className="mr-2 accent-[#8252A1]"
-                      checked={tempFilters.reviewScore.includes(option.value)}
-                      onChange={() => handleFilterChange('reviewScore', option.value, true)}
-                    />
-                    {option.label}
-                  </label>
-                ))}
-              </div>
               <button
                 onClick={applyFilters}
                 className="w-full mt-6 bg-[#8252A1] text-white py-2 px-4 rounded-lg hover:bg-[#6f4587] transition-colors"
@@ -522,12 +687,8 @@ const SearchResults = () => {
                 <select
                   className="p-2 border rounded-lg bg-gray-100"
                   value={sortOption}
-                  onChange={(e) => {
-                    setSortOption(e.target.value);
-                    updateUrl({ ...searchParams, sort: e.target.value });
-                  }}
+                  onChange={(e) => handleSortChange(e.target.value)}
                 >
-                  <option value="our-top-picks">Our top picks</option>
                   <option value="price-low-to-high">Price (low to high)</option>
                   <option value="price-high-to-low">Price (high to low)</option>
                   <option value="rating">Rating</option>
@@ -536,16 +697,18 @@ const SearchResults = () => {
             </div>
             {loading ? (
               <div className="text-center p-4">Loading...</div>
+            ) : filteredProperties.length === 0 ? (
+              <div className="text-center p-4">No properties found</div>
             ) : (
               <PropertyCard
-              properties={filteredProperties}
-              searchParams={{
-                checkIn,
-                checkOut,
-                guests,
-              }}
-              onHotelClick={handleHotelClick}
-            />
+                properties={filteredProperties}
+                searchParams={{
+                  checkIn: searchParams.checkIn,
+                  checkOut: searchParams.checkOut,
+                  guests: searchParams.guests,
+                }}
+                onHotelClick={handleHotelClick}
+              />
             )}
           </main>
         </div>

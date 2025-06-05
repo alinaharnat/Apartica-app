@@ -84,7 +84,7 @@ const App = () => {
         <Route path="/manage-bookings" element={<BookingManagementPage />} />
         <Route path="/my-properties" element={<MyPropertiesPage />} />
         <Route path="/subscription-plans" element={<SubscriptionPlansPage />} />
-        {/* <Route path="/payment-success" element={<PaymentSuccess />} /> */}
+        <Route path="/success" element={<SuccessRedirect />} />
       </Routes>
     </LoadScript>
   );

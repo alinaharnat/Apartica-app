@@ -29,17 +29,19 @@ const PropertyPage = () => {
   const [availableRooms, setAvailableRooms] = useState([]);
   const [startDate, setStartDate] = useState(() => {
     const date = new Date(new Date().setDate(new Date().getDate() + 7));
-    date.setHours(0, 0, 0, 0);
+    date.setUTCHours(0, 0, 0, 0); // Встановлюємо 00:00:00 UTC
     return date;
   });
   const [endDate, setEndDate] = useState(() => {
     const date = new Date(new Date().setDate(new Date().getDate() + 8));
-    date.setHours(0, 0, 0, 0);
+    date.setUTCHours(0, 0, 0, 0); // Встановлюємо 00:00:00 UTC
     return date;
   });
   const [guests, setGuests] = useState(1);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [originalPrice, setOriginalPrice] = useState(0);
+  const [isFirstBooking, setIsFirstBooking] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [error, setError] = useState(null);
   const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
@@ -64,12 +66,12 @@ const PropertyPage = () => {
 
     if (urlCheckIn && !isNaN(urlCheckIn.getTime())) {
       newStartDate = new Date(urlCheckIn);
-      newStartDate.setHours(0, 0, 0, 0);
+      newStartDate.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
       console.log('Set startDate:', newStartDate);
     }
     if (urlCheckOut && !isNaN(urlCheckOut.getTime())) {
       newEndDate = new Date(urlCheckOut);
-      newEndDate.setHours(0, 0, 0, 0);
+      newEndDate.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
       console.log('Set endDate:', newEndDate);
     }
 
@@ -151,6 +153,31 @@ const PropertyPage = () => {
   }, [id]);
 
   useEffect(() => {
+    const fetchUserBookings = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token || !user) return;
+        const headers = { Authorization: `Bearer ${token}` };
+        const response = await axios.get('/api/booking/user', { headers });
+        const { currentBookings, pastBookings } = response.data;
+        console.log('User bookings:', { currentBookings, pastBookings });
+        // Check if user has no past or current bookings
+        setIsFirstBooking(currentBookings.length === 0 && pastBookings.length === 0);
+      } catch (err) {
+        console.error('Failed to fetch user bookings:', err);
+        if (err.response?.status === 401) {
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          setUser(null);
+          navigate('/login');
+        }
+        // Do not set error state, just silently skip discount if check fails
+      }
+    };
+    fetchUserBookings();
+  }, [user, navigate]);
+
+  useEffect(() => {
     const fetchAvailableRooms = async () => {
       try {
         console.log('Fetching rooms with params:', { startDate, endDate, guests });
@@ -195,12 +222,15 @@ const PropertyPage = () => {
   useEffect(() => {
     if (selectedRoom && endDate > startDate) {
       const nights = calculateNights(startDate, endDate);
-      const price = selectedRoom.pricePerNight * nights;
-      setTotalPrice(Number(price.toFixed(2)));
+      const basePrice = selectedRoom.pricePerNight * nights;
+      setOriginalPrice(Number(basePrice.toFixed(2)));
+      const discountedPrice = isFirstBooking ? basePrice * 0.9 : basePrice;
+      setTotalPrice(Number(discountedPrice.toFixed(2)));
     } else {
+      setOriginalPrice(0);
       setTotalPrice(0);
     }
-  }, [selectedRoom, startDate, endDate]);
+  }, [selectedRoom, startDate, endDate, isFirstBooking]);
 
   useEffect(() => {
     return () => {
@@ -213,8 +243,8 @@ const PropertyPage = () => {
   const calculateNights = (start, end) => {
     const startCopy = new Date(start);
     const endCopy = new Date(end);
-    startCopy.setHours(0, 0, 0, 0);
-    endCopy.setHours(0, 0, 0, 0);
+    startCopy.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
+    endCopy.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
     const diffTime = endCopy - startCopy;
     return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
   };
@@ -239,13 +269,14 @@ const PropertyPage = () => {
     }
     navigate('/booking', {
       state: {
-        startDate,
-        endDate,
+        startDate: new Date(startDate).toISOString(), // Передаємо в UTC
+        endDate: new Date(endDate).toISOString(), // Передаємо в UTC
         guests,
         totalPrice,
         propertyId: id,
-        selectedRoom
-      }
+        selectedRoom,
+        isFirstBooking,
+      },
     });
   };
 
@@ -343,7 +374,7 @@ const PropertyPage = () => {
       setProperty((prev) => ({
         ...prev,
         reviews: [...(prev.reviews || []), newReview],
-        averageRating: newReview.averageRating || prev.averageRating, // Оновлюємо averageRating
+        averageRating: newReview.averageRating || prev.averageRating,
       }));
 
       setReviewRating('');
@@ -410,11 +441,16 @@ const PropertyPage = () => {
       <Navbar user={user} />
 
       <main className="max-w-6xl mx-auto px-4 py-8 pt-24 space-y-4 flex-grow relative z-0">
-        <div className="flex items-center gap-2">
-          <h1 className="text-3xl font-bold">{property.title}</h1>
-          <button onClick={handleShare} className="p-2 rounded-full hover:bg-gray-100">
-            <img src="/shareicon.svg" alt="Share" className="w-6 h-6" />
-          </button>
+        <div className="space-y-1">
+          <p className="text-sm text-gray-500">
+            {property.propertyType?.name || 'Property type not specified'}
+          </p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold">{property.title}</h1>
+            <button onClick={handleShare} className="p-2 rounded-full hover:bg-gray-100">
+              <img src="/shareicon.svg" alt="Share" className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -441,7 +477,7 @@ const PropertyPage = () => {
                 }`}
                 onClick={() => {
                   setModalPhotos(property.photos);
-                  setSelectedPhotoIndex(idx);
+                  PropertyPage.setSelectedPhotoIndex(idx);
                   setIsGalleryOpen(true);
                 }}
               >
@@ -463,7 +499,26 @@ const PropertyPage = () => {
             <div className="w-full bg-white p-6 rounded-xl shadow-lg z-50 mr-4">
               <div className="flex items-center mb-4 gap-2">
                 <div>
-                  <p className="text-2xl font-bold">€{totalPrice}</p>
+                  {isFirstBooking && originalPrice > 0 ? (
+                    <div className="flex items-center gap-2">
+                      <p className="text-2xl font-bold text-gray-500 line-through">
+                        €{originalPrice}
+                      </p>
+                      <p className="text-2xl font-bold text-green-600">
+                        €{totalPrice}
+                      </p>
+                      <div className="relative group">
+                        <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-700 text-xs flex items-center justify-center cursor-help">
+                          ?
+                        </span>
+                        <div className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-40 -left-10 top-6 z-10">
+                          First booking discount: 10% off your first stay!
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-2xl font-bold">€{totalPrice}</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">total</p>
@@ -476,12 +531,12 @@ const PropertyPage = () => {
                     selected={startDate}
                     onChange={date => {
                       const newDate = new Date(date);
-                      newDate.setHours(0, 0, 0, 0);
+                      newDate.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
                       setStartDate(newDate);
                       if (newDate >= endDate) {
                         const newEndDate = new Date(newDate);
                         newEndDate.setDate(newEndDate.getDate() + 1);
-                        newEndDate.setHours(0, 0, 0, 0);
+                        newEndDate.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
                         setEndDate(newEndDate);
                       }
                     }}
@@ -500,7 +555,7 @@ const PropertyPage = () => {
                     selected={endDate}
                     onChange={date => {
                       const newDate = new Date(date);
-                      newDate.setHours(0, 0, 0, 0);
+                      newDate.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
                       setEndDate(newDate || new Date(startDate.getTime() + 24 * 60 * 60 * 1000));
                     }}
                     selectsEnd
@@ -527,9 +582,11 @@ const PropertyPage = () => {
               <button
                 onClick={handleReserve}
                 className={`w-full py-3 rounded-lg font-semibold transition text-white ${
-                  selectedRoom ? 'bg-[#8252A1] hover:bg-[#6f4587]' : 'bg-gray-400 cursor-not-allowed'
+                  selectedRoom && property.isListed !== false
+                    ? 'bg-[#8252A1] hover:bg-[#6f4587]'
+                    : 'bg-gray-400 cursor-not-allowed'
                 }`}
-                disabled={!selectedRoom}
+                disabled={!selectedRoom || property.isListed === false}
               >
                 Reserve
               </button>
@@ -639,7 +696,7 @@ const PropertyPage = () => {
               ))}
             </div>
           ) : (
-            <p className="text-center text-red-500">No rooms available for the selected dates.</p>
+            <p className="text-center text-red-500">No rooms available for the selected options.</p>
           )}
         </div>
 

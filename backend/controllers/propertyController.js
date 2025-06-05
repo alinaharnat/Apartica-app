@@ -278,6 +278,10 @@ const getProperties = asyncHandler(async (req, res) => {
     sort = '-positiveReviewCount', // По умолчанию сортировка по количеству положительных отзывов
   } = req.query;
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 46226abb294a5ff553f28d4836600f14dec2c2fe
   try {
     const filter = { isListed: true };
 
@@ -307,6 +311,11 @@ const getProperties = asyncHandler(async (req, res) => {
       const amenityDocs = await Amenity.find({ name: { $in: amenityNames } });
       if (amenityDocs.length > 0) {
         filter.amenities = { $all: amenityDocs.map(doc => doc._id) };
+<<<<<<< HEAD
+=======
+      } else {
+        return res.status(200).json([]);
+>>>>>>> 46226abb294a5ff553f28d4836600f14dec2c2fe
       }
     }
 
@@ -325,7 +334,12 @@ const getProperties = asyncHandler(async (req, res) => {
       }
     });
 
+<<<<<<< HEAD
     // Агрегация для подсчета положительных отзывов
+=======
+
+    // Aggregation pipeline
+>>>>>>> 46226abb294a5ff553f28d4836600f14dec2c2fe
     const pipeline = [
       // Фильтрация по базовым условиям
       { $match: filter },
@@ -464,7 +478,10 @@ const getProperties = asyncHandler(async (req, res) => {
       })
     ).then(results => results.filter(property => property !== null));
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 46226abb294a5ff553f28d4836600f14dec2c2fe
 
     if (!propertiesData.length) {
       return res.status(200).json([]);
@@ -550,6 +567,7 @@ const getPropertyById = asyncHandler(async (req, res) => {
         rating: review.overallRating,
         createdAt: review.createdAt,
       })),
+      isListed: property.isListed,
     });
   } catch (error) {
     console.error('getPropertyById error:', error);
@@ -574,15 +592,23 @@ const getAvailableRooms = asyncHandler(async (req, res) => {
     }
 
     const rooms = await Room.find({ propertyId: id, maxGuests: { $gte: parseInt(guests) } });
+
+    // Знаходимо бронювання, які перетинаються з обраним періодом
     const bookings = await Booking.find({
       roomId: { $in: rooms.map(room => room._id) },
       status: { $in: ['pending', 'confirmed'] },
-      $or: [
-        { checkIn: { $lte: new Date(endDate) }, checkOut: { $gte: new Date(startDate) } },
+      $and: [
+        { checkIn: { $lt: new Date(endDate) } }, // checkIn < endDate
+        { checkOut: { $gt: new Date(startDate) } }, // checkOut > startDate
       ],
     });
 
-    const unavailableRoomIds = bookings.map(booking => booking.roomId.toString());
+    // Виключаємо бронювання, де checkIn дорівнює endDate
+    const conflictingBookings = bookings.filter(
+      booking => !(booking.checkIn.getTime() === new Date(endDate).getTime())
+    );
+
+    const unavailableRoomIds = conflictingBookings.map(booking => booking.roomId.toString());
     const availableRooms = rooms.filter(room => !unavailableRoomIds.includes(room._id.toString()));
 
     const roomsWithPhotos = await Promise.all(
