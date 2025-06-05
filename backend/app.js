@@ -14,6 +14,7 @@ const photoRoutes = require('./routes/photoRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const cronRoutes = require('./routes/cronRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
+const moderatorRoutes = require('./routes/moderatorRoutes');
 
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
@@ -69,6 +70,7 @@ app.use('/api/photos', photoRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api', cronRoutes);
 app.use('/api/stripe', stripeRoutes);
+app.use('/api/moderator', moderatorRoutes);
 
 
 // Health check route

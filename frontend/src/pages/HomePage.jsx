@@ -18,9 +18,10 @@ const HomePage = () => {
       const userData = JSON.parse(stored);
       setUser(userData);
       
-      // Если пользователь администратор - перенаправляем в админку
       if (userData.userType.includes('Administrator')) {
         navigate('/admin');
+      } else if (userData.userType.includes('Moderator')) {
+        navigate('/moderator');
       }
     }
   }, [navigate]);

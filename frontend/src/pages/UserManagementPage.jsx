@@ -8,7 +8,7 @@ const emptyUser = {
   name: '',
   email: '',
   phoneNumber: '',
-  userType: ['Renter'],
+  userType: 'Renter',
   isBlocked: false,
   gender: '',
   birthDate: '',
@@ -88,7 +88,7 @@ const UserManagementPage = () => {
       name: user.name,
       email: user.email,
       phoneNumber: user.phoneNumber || '',
-      userType: user.userType,
+      userType: Array.isArray(user.userType) ? user.userType[0] || 'Renter' : user.userType || 'Renter', // Handle array or string
       isBlocked: user.isBlocked || false,
       gender: user.gender || '',
       birthDate: user.birthDate ? user.birthDate.slice(0, 10) : '',
@@ -105,14 +105,7 @@ const UserManagementPage = () => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name === 'userType') {
-      let newUserTypes = [...formData.userType];
-      if (checked) {
-        if (!newUserTypes.includes(value)) newUserTypes.push(value);
-      } else {
-        newUserTypes = newUserTypes.filter((role) => role !== value);
-        if (newUserTypes.length === 0) newUserTypes = ['Renter'];
-      }
-      setFormData((prev) => ({ ...prev, userType: newUserTypes }));
+      setFormData((prev) => ({ ...prev, userType: value })); // Set single value
     } else if (type === 'checkbox') {
       setFormData((prev) => ({ ...prev, [name]: checked }));
     } else {
@@ -173,6 +166,11 @@ const UserManagementPage = () => {
       errors.push('Invalid gender value.');
     }
 
+    const allowedRoles = ['Renter', 'PropertyOwner', 'Administrator', 'Moderator'];
+    if (!allowedRoles.includes(data.userType)) {
+      errors.push('Invalid role value.');
+    }
+    
     if (data.birthDate) {
       const birth = new Date(data.birthDate);
       const now = new Date();
@@ -220,7 +218,10 @@ const UserManagementPage = () => {
     }
   };
 
-  const isNonRenter = (user) => user.userType.some((role) => role !== 'Renter');
+  const isAdminOrModerator = (user) => {
+    const role = Array.isArray(user.userType) ? user.userType[0] : user.userType;
+    return role === 'Administrator' || role === 'Moderator';
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -251,11 +252,11 @@ const UserManagementPage = () => {
                   {users.map((user) => (
                     <tr
                       key={user._id}
-                      className={`border-t ${isNonRenter(user) ? 'bg-purple-100' : ''}`}
+                      className={`border-t ${isAdminOrModerator(user) ? 'bg-purple-100' : ''}`}
                     >
                       <td className="py-2 px-4 font-medium">{user.name}</td>
                       <td className="py-2 px-4">{user.email}</td>
-                      <td className="py-2 px-4">{user.userType.join(', ')}</td>
+                      <td className="py-2 px-4">{Array.isArray(user.userType) ? user.userType.join(', ') : user.userType}</td>
                       <td className="py-2 px-4">{user.gender || '-'}</td>
                       <td className="py-2 px-4">{user.birthDate ? user.birthDate.slice(0, 10) : '-'}</td>
                       <td className="py-2 px-4">

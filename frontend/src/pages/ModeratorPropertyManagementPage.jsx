@@ -4,15 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useNavigate } from 'react-router-dom';
 
-const emptyProperty = {
-  title: '',
-  description: '',
-  address: '',
-  cityId: '',
-  propertyType: '',
-  isListed: true,
-};
-
+// Modal component for confirming actions
 const ConfirmModal = ({ message, onConfirm, onCancel }) => {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -37,163 +29,104 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => {
   );
 };
 
-const PropertyManagementPage = () => {
+const ModeratorPropertyManagementPage = () => {
   const [user, setUser] = useState(null);
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [cities, setCities] = useState([]);
-  const [propertyTypes, setPropertyTypes] = useState([]);
-
   const [editingProperty, setEditingProperty] = useState(null);
-  const [formData, setFormData] = useState(emptyProperty);
+  const [formData, setFormData] = useState({ isListed: false });
   const [formErrors, setFormErrors] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
-
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState(null);
-
   const navigate = useNavigate();
 
+  // Check authentication and fetch properties on mount
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
       const userData = JSON.parse(stored);
-      setUser(userData);
-      fetchProperties();
-      fetchDropdownData();
+      if (userData.userType.includes('Moderator')) {
+        setUser(userData);
+        fetchProperties();
+      } else {
+        navigate('/');
+      }
     } else {
       navigate('/auth');
     }
   }, [navigate]);
 
+  // Fetch all properties from the API
   const fetchProperties = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/admin/properties', {
+      const res = await axios.get('/api/moderator/properties', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProperties(res.data);
       setError(null);
-    } catch (err) {
+    } catch {
       setError('Failed to load properties');
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchDropdownData = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const [citiesRes, typesRes] = await Promise.all([
-        axios.get('/api/cities', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get('/api/property-types', { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
-      
-      setCities(citiesRes.data);
-      setPropertyTypes(typesRes.data);
-    } catch (err) {
-      console.error('Failed to load dropdown data:', err);
-    }
-  };
-
+  // Start editing a property
   const startEdit = (property) => {
     setEditingProperty(property);
-    setFormData({
-      title: property.title,
-      description: property.description,
-      address: property.address,
-      cityId: property.cityId._id,
-      propertyType: property.propertyType._id,
-      isListed: property.isListed,
-    });
+    setFormData({ isListed: property.isListed || false });
     setFormErrors([]);
   };
 
+  // Cancel editing
   const cancelEdit = () => {
     setEditingProperty(null);
-    setFormData(emptyProperty);
+    setFormData({ isListed: false });
     setFormErrors([]);
   };
 
+  // Handle form input changes
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
-    if (type === 'checkbox') {
-      setFormData(prev => ({ ...prev, [name]: checked }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    const { name, checked } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
+  // Save changes to property
   const handleSave = async () => {
-    const validationErrors = validatePropertyForm(formData);
-
-    if (validationErrors.length > 0) {
-      setFormErrors(validationErrors);
-      return;
-    }
-
+    if (!editingProperty) return;
     setIsSaving(true);
     const token = localStorage.getItem('token');
 
     try {
-      const response = await axios.put(
-        `/api/admin/properties/${editingProperty._id}`, 
-        formData, 
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      setProperties(properties.map(p => 
-        p._id === editingProperty._id ? response.data : p
-      ));
+      await axios.put(`/api/moderator/properties/${editingProperty._id}`, formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await fetchProperties();
       cancelEdit();
     } catch (err) {
-      setFormErrors([err.response?.data?.message || err.message || 'Unknown error occurred']);
+      setFormErrors([err.response?.data?.message || err.message || 'Unknown error']);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const validatePropertyForm = (data) => {
-    const errors = [];
-
-    if (!data.title || data.title.trim().length < 5) {
-      errors.push('Title must be at least 5 characters long.');
-    }
-
-    if (!data.description || data.description.trim().length < 20) {
-      errors.push('Description must be at least 20 characters long.');
-    }
-
-    if (!data.address || data.address.trim().length < 5) {
-      errors.push('Address must be at least 5 characters long.');
-    }
-
-    if (!data.cityId) {
-      errors.push('City is required.');
-    }
-
-    if (!data.propertyType) {
-      errors.push('Property type is required.');
-    }
-
-    return errors;
-  };
-
+  // Confirm deletion of a property
   const confirmDelete = (property) => {
     setPropertyToDelete(property);
     setShowConfirmModal(true);
   };
 
+  // Handle property deletion
   const handleDelete = async () => {
     if (!propertyToDelete) return;
 
     const token = localStorage.getItem('token');
     try {
-      await axios.delete(`/api/admin/properties/${propertyToDelete._id}`, {
+      await axios.delete(`/api/moderator/properties/${propertyToDelete._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       await fetchProperties();
@@ -203,14 +136,6 @@ const PropertyManagementPage = () => {
       setShowConfirmModal(false);
       setPropertyToDelete(null);
     }
-  };
-
-  const getPropertyTypeName = (property) => {
-    return property.propertyType?.name || 'Unknown';
-  };
-
-  const getCityName = (property) => {
-    return property.cityId?.name || 'Unknown';
   };
 
   return (
@@ -232,9 +157,9 @@ const PropertyManagementPage = () => {
                     <th className="py-3 px-4 w-1/5">Title</th>
                     <th className="py-3 px-4 w-2/5">Address</th>
                     <th className="py-3 px-4 w-1/6">City</th>
-                    <th className="py-3 px-4 w-1/6">Type</th>
+                    <th className="py-3 px-4 w-1/6">Owner</th>
                     <th className="py-3 px-4 w-1/6">Status</th>
-                    <th className="py-3 px-4 w-1/5">Actions</th>
+                    <th className="py-3 px-4 w-1/6">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -244,13 +169,13 @@ const PropertyManagementPage = () => {
                         {property.title}
                       </td>
                       <td className="py-2 px-4 whitespace-nowrap overflow-hidden text-ellipsis">
-                        {property.address}
+                        {property.address || '-'}
                       </td>
                       <td className="py-2 px-4 whitespace-nowrap">
-                        {getCityName(property)}
+                        {property.cityId?.name || '-'}
                       </td>
                       <td className="py-2 px-4 whitespace-nowrap">
-                        {getPropertyTypeName(property)}
+                        {property.ownerId?.name || '-'}
                       </td>
                       <td className="py-2 px-4 whitespace-nowrap">
                         {property.isListed ? (
@@ -282,7 +207,7 @@ const PropertyManagementPage = () => {
             </div>
 
             {editingProperty && (
-              <div className="bg-white p-6 rounded shadow max-w-3xl mx-auto mb-20">
+              <div className="bg-white p-6 rounded shadow max-w-xl mx-auto mb-20">
                 <h2 className="text-xl font-semibold mb-4">Edit Property</h2>
 
                 {formErrors.length > 0 && (
@@ -296,74 +221,6 @@ const PropertyManagementPage = () => {
                   </div>
                 )}
 
-                <label className="block mb-3">
-                  Title
-                  <input
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    className="w-full border rounded p-2 mt-1"
-                    required
-                  />
-                </label>
-
-                <label className="block mb-3">
-                  Description
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    className="w-full border rounded p-2 mt-1"
-                    rows="4"
-                    required
-                  />
-                </label>
-
-                <label className="block mb-3">
-                  Address
-                  <input
-                    type="text"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    className="w-full border rounded p-2 mt-1"
-                    required
-                  />
-                </label>
-
-                <label className="block mb-3">
-                  City
-                  <select
-                    name="cityId"
-                    value={formData.cityId}
-                    onChange={handleInputChange}
-                    className="w-full border rounded p-2 mt-1"
-                    required
-                  >
-                    <option value="">Select a city</option>
-                    {cities.map(city => (
-                      <option key={city._id} value={city._id}>{city.name}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="block mb-3">
-                  Property Type
-                  <select
-                    name="propertyType"
-                    value={formData.propertyType}
-                    onChange={handleInputChange}
-                    className="w-full border rounded p-2 mt-1"
-                    required
-                  >
-                    <option value="">Select a property type</option>
-                    {propertyTypes.map(type => (
-                      <option key={type._id} value={type._id}>{type.name}</option>
-                    ))}
-                  </select>
-                </label>
-
                 <label className="block mb-6">
                   <input
                     type="checkbox"
@@ -372,7 +229,7 @@ const PropertyManagementPage = () => {
                     onChange={handleInputChange}
                     className="mr-2"
                   />
-                  Listed (visible to users)
+                  Listed
                 </label>
 
                 <div className="flex justify-end space-x-4">
@@ -389,15 +246,15 @@ const PropertyManagementPage = () => {
                 </div>
               </div>
             )}
-          </>
-        )}
 
-        {showConfirmModal && (
-          <ConfirmModal
-            message={`Are you sure you want to delete property "${propertyToDelete?.title}"?`}
-            onConfirm={handleDelete}
-            onCancel={() => setShowConfirmModal(false)}
-          />
+            {showConfirmModal && (
+              <ConfirmModal
+                message={`Are you sure you want to delete the property "${propertyToDelete?.title}"?`}
+                onConfirm={handleDelete}
+                onCancel={() => setShowConfirmModal(false)}
+              />
+            )}
+          </>
         )}
       </main>
       <Footer />
@@ -405,4 +262,4 @@ const PropertyManagementPage = () => {
   );
 };
 
-export default PropertyManagementPage;  
+export default ModeratorPropertyManagementPage;

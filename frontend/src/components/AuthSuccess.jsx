@@ -29,6 +29,8 @@ const AuthSuccess = () => {
         // Проверка роли и перенаправление
         if (parsed.userType?.includes('Administrator')) {
           navigate('/admin');
+        } else if (parsed.userType?.includes('Moderator')) {
+          navigate('/moderator');
         } else {
           navigate('/');
         }
