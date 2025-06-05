@@ -56,5 +56,38 @@ router.get('/:id/unavailable-dates', getUnavailableDates);
 
 // Protected routes
 router.post('/', protect, createPropertyWithRooms);
+router.delete('/:id', protect, async (req, res) => {
+  try {
+    const property = await Property.findById(req.params.id);
+    if (!property) {
+      return res.status(404).json({ message: 'Property not found' });
+    }
+    if (property.ownerId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Unauthorized: You are not the owner of this property' });
+    }
+
+    // Delete all rooms associated with the property
+    const rooms = await Room.find({ propertyId: property._id });
+    const roomIds = rooms.map(room => room._id);
+
+    // Delete all photos associated with the property and its rooms
+    await Photo.deleteMany({
+      $or: [
+        { propertyId: property._id },
+        { roomId: { $in: roomIds } }
+      ]
+    });
+
+    // Delete all rooms
+    await Room.deleteMany({ propertyId: property._id });
+
+    // Delete the property
+    await property.deleteOne();
+
+    res.json({ message: 'Property and all associated data deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
 
 module.exports = router;
