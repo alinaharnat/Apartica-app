@@ -12,7 +12,7 @@ const BookingPage = () => {
   const storedState = localStorage.getItem('bookingState');
   const state = location.state || (storedState ? JSON.parse(storedState) : null);
 
-  const { startDate, endDate, guests, totalPrice, propertyId, selectedRoom } = state || {};
+  const { startDate, endDate, guests, totalPrice, propertyId, selectedRoom, isFirstBooking } = state || {};
 
   const [user, setUser] = useState(null);
   const [property, setProperty] = useState(null);
@@ -100,6 +100,7 @@ const BookingPage = () => {
       totalPrice,
       propertyId,
       selectedRoom,
+      isFirstBooking,
     };
     localStorage.setItem('bookingState', JSON.stringify(bookingState));
 
@@ -153,6 +154,7 @@ const BookingPage = () => {
 
   const nights = Math.max(0, Math.floor((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)));
   const roomName = `${selectedRoom.bedrooms} Bedroom${selectedRoom.bedrooms > 1 ? 's' : ''}, ${selectedRoom.bathrooms} Bathroom${selectedRoom.bathrooms > 1 ? 's' : ''}`;
+  const originalPrice = selectedRoom.pricePerNight * nights;
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-[#FFF8F2]">
@@ -220,16 +222,52 @@ const BookingPage = () => {
               </div>
             </div>
             <div className="mt-4">
-              <p className="text-xl font-semibold">Total: €{totalPrice}</p>
+              {isFirstBooking && originalPrice > 0 ? (
+                <div className="flex items-center gap-2">
+                  <p className="text-xl font-bold text-black-500">
+                    Total:
+                  </p>
+                  <p className="text-xl font-bold text-gray-500 line-through">
+                    €{Number(originalPrice.toFixed(2))}
+                  </p>
+                  <p className="text-xl font-bold text-green-600">
+                    €{totalPrice}
+                  </p>
+                  <div className="relative group">
+                    <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-700 text-xs flex items-center justify-center cursor-help">
+                      ?
+                    </span>
+                    <div className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-40 -left-10 top-6 z-10">
+                      First booking discount: 10% off your first stay!
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xl font-bold">€{totalPrice}</p>
+              )}
             </div>
           </div>
 
           {/* Price Information */}
           <div className="bg-white p-6 rounded-xl shadow-lg">
             <h2 className="text-xl font-semibold mb-4">Price Information</h2>
-            <p>
-              €{selectedRoom.pricePerNight} per night × {nights} night{nights > 1 ? 's' : ''} = €{totalPrice}
-            </p>
+            {isFirstBooking && originalPrice > 0 ? (
+              <div className="space-y-2">
+                <p>
+                  €{selectedRoom.pricePerNight} per night × {nights} night{nights > 1 ? 's' : ''} = €{Number(originalPrice.toFixed(2))}
+                </p>
+                <p className="text-green-600">
+                  First booking discount (10% off): -€{Number((originalPrice - totalPrice).toFixed(2))}
+                </p>
+                <p className="font-semibold">
+                  Total after discount: €{totalPrice}
+                </p>
+              </div>
+            ) : (
+              <p>
+                €{selectedRoom.pricePerNight} per night × {nights} night{nights > 1 ? 's' : ''} = €{totalPrice}
+              </p>
+            )}
           </div>
         </div>
 

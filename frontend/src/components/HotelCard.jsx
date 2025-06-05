@@ -23,7 +23,7 @@ const HotelCard = ({ searchParams, filters }) => {
         const minRating = filters?.reviewScore ?? 0;
 
         const queryParams = new URLSearchParams({
-          sort: '-positiveReviewCount', // Сортировка по количеству положительных отзывов
+          sort: '-positiveReviewCount',
           limit: 10,
           minPrice,
           maxPrice,
@@ -38,6 +38,9 @@ const HotelCard = ({ searchParams, filters }) => {
           queryParams.append('type', filters.propertyType);
         }
 
+        // Добавляем populate для cityId и countryId
+        queryParams.append('populate', 'cityId,countryId');
+
         const response = await axios.get(`/api/properties?${queryParams.toString()}`);
         let propertiesData = response.data;
 
@@ -46,7 +49,6 @@ const HotelCard = ({ searchParams, filters }) => {
           return;
         }
 
-        // Гарантуємо, що фото — масив
         propertiesData = propertiesData.map(property => ({
           ...property,
           photos: Array.isArray(property.photos) ? property.photos : [],
@@ -115,13 +117,23 @@ const HotelCard = ({ searchParams, filters }) => {
             <div className="p-4">
               <h3 className="text-lg font-semibold line-clamp-2">{property.title}</h3>
               <p className="text-gray-600 text-sm line-clamp-1">
-                {property.cityId?.name || 'Unknown City'}, {property.cityId?.countryId?.name || 'Unknown Country'}
+                {property.cityId?.name || 'Unknown City'}, {property.countryId?.name || 'Unknown Country'}
               </p>
               <div className="flex items-center mt-2">
                 <span className="bg-purple-600 text-white text-xs font-semibold px-2.5 py-0.5 rounded">
                   {property.averageRating?.toFixed(1) || 'N/A'}
                 </span>
-                <span className="ml-2 text-sm text-gray-600">Excellent</span>
+                <span className="ml-2 text-sm text-gray-600">
+                  {property.averageRating >= 9
+                    ? 'Wonderful'
+                    : property.averageRating >= 8
+                      ? 'Very Good'
+                      : property.averageRating >= 7
+                        ? 'Good'
+                        : property.averageRating >= 6
+                          ? 'Pleasant'
+                          : 'No rating'}
+                </span>
               </div>
               <p className="mt-2 text-gray-600">
                 Starting from €{property.pricePerNight || 'N/A'}

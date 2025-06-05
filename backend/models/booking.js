@@ -63,4 +63,6 @@ bookingSchema.pre('save', function(next) {
   }
 });
 
-module.exports = mongoose.model('Booking', bookingSchema);
+const Booking = mongoose.models.Booking || mongoose.model('Booking', bookingSchema);
+
+module.exports = Booking;
