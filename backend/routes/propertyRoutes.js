@@ -15,7 +15,7 @@ const Property = require('../models/property');
 const User = require('../models/user');
 
 // IMPORTANT: Put specific routes BEFORE parameterized routes
-router.get('/form-data', protect, getFormData);
+router.get('/form-data', getFormData);
 router.get('/my-properties', protect, async (req, res) => {
   try {
     const properties = await Property.find({ ownerId: req.user._id })
@@ -92,6 +92,6 @@ router.delete('/:id', protect, async (req, res) => {
 });
 
 // Consolidated route for /rooms
-router.get('/rooms', protect, getRoomsByPropertyIds);
+router.get('/rooms', getRoomsByPropertyIds);
 
 module.exports = router;

@@ -19,7 +19,7 @@ import BookingManagementPage from './pages/BookingManagementPage';
 import SearchResults from './pages/SearchResults';
 import SubscriptionPlansPage from './pages/SubscriptionPlansPage';
 import MyPropertiesPage from './pages/MyPropertiesPage';
-// import PaymentSuccess from './pages/PaymentSuccess';
+import SuccessRedirect from './pages/SuccessRedirect';
 
 const App = () => {
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState(null);
@@ -85,6 +85,7 @@ const App = () => {
         <Route path="/my-properties" element={<MyPropertiesPage />} />
         <Route path="/subscription-plans" element={<SubscriptionPlansPage />} />
         <Route path="/success" element={<SuccessRedirect />} />
+       
       </Routes>
     </LoadScript>
   );
