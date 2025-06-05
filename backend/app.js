@@ -12,6 +12,8 @@ const propertyTypeRoutes = require('./routes/propertyTypeRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const photoRoutes = require('./routes/photoRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const cronRoutes = require('./routes/cronRoutes');
+const stripeRoutes = require('./routes/stripeRoutes');
 
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
@@ -21,7 +23,7 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-
+require('./config/cronJobs');
 
 // Middleware
 app.use(cors({
@@ -60,6 +62,9 @@ app.use('/api/property-types', propertyTypeRoutes);
 app.use('/api/booking', bookingRoutes);
 app.use('/api/photos', photoRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api', cronRoutes);
+app.use('/api/stripe', stripeRoutes);
+
 
 // Health check route
 app.get('/', (req, res) => {

@@ -10,12 +10,12 @@ const plansData = [
     numberOfProperties: 'Up to 2 properties',
     customerSupport: 'Email support',
     listingVisibility: 'Standart visibility',
-    colorTop: 'bg-white text-white rounded-t-lg', // Змінено на однотонний колір
+    colorTop: 'bg-white text-white rounded-t-lg', 
     colorBottom: 'bg-white rounded-b-lg',
     buttonBg: 'bg-purple-500',
     buttonText: 'Your current plan',
     isHighlighted: false,
-    frameStyle: { // Стилі для основної рамки заголовка
+    frameStyle: { 
       backgroundColor: 'bg-purple-500',
       borderRadius: 'rounded-[14px]',
       padding: 'p-7',
@@ -40,7 +40,7 @@ const plansData = [
       padding: 'p-7',
       margin: 'm-3',
     },
-    textColor: 'text-white', // Змінено колір тексту на білий для кращої видимості обводки
+    textColor: 'text-white',
   },
 ];
 
@@ -82,7 +82,7 @@ const SubscriptionPlansPage = () => {
       <Navbar user={user} />
 
       <main className="flex-grow p-8">
-      <section className="mb-12 text-center mt-20"> {/* Збільшено mt для більшого відступу */}
+      <section className="mb-12 text-center mt-20">
   <h2 className="text-3xl font-bold text-gray-800 mb-2">Unlock your property potential with Apartica</h2>
   <p className="text-lg font-semibold text-gray-600 mb-8">Whether you’re listing a couple of properties or managing a portfolio, Apartic has a plan for you.</p>
 </section>
@@ -94,18 +94,16 @@ const SubscriptionPlansPage = () => {
               <div
   key={plan.title}
   className={`rounded-[20px] overflow-hidden flex flex-col ${
-    plan.title === 'Agency' ? '' : 'shadow-md' // Тінь лише для "Property owner"
+    plan.title === 'Agency' ? '' : 'shadow-md' 
   }`}
   style={{ outline: plan.title === 'Agency' ? '4px solid #9b57c6' : 'none' }}
 >
-                {/* Кольоровий фон */}
+
                 <div className={`rounded-t-[20px] overflow-hidden ${plan.colorTop}`}>
-                  {/* Основна рамка для заголовка */}
                   <div className={`${plan.frameStyle.backgroundColor} ${plan.frameStyle.borderRadius} ${plan.frameStyle.padding} ${plan.frameStyle.margin}`}>
                     <h3 className={`text-xl font-semibold text-center ${plan.textColor}`}>{plan.title}</h3>
                   </div>
                 </div>
-                {/* Основний вміст плану */}
                 <div className={`p-6 ${plan.colorBottom} flex flex-col justify-between`}>
                   <div className="mb-2">
                     <p className="text-gray-700"><span className="font-semibold">Monthly price</span></p>
@@ -131,32 +129,42 @@ const SubscriptionPlansPage = () => {
   onClick={async () => {
     if (plan.title !== 'Agency') return;
 
+    if (!user || !user.userId) {
+      alert('Please log in to subscribe.');
+      return;
+    }
+
     try {
-      const response = await fetch('http://localhost:5000/api/stripe/create-subscription-session', {
-        method: 'POST',
+      const response = await fetch("http://localhost:5000/api/stripe/create-subscription-session", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          priceId: 'your_price_id_here', // заменишь на реальный priceId
-          userId: user?._id,
-        }),
+        body: JSON.stringify({ userId: user.userId }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert('Error: ' + (errorData.error || 'Unable to create Stripe session'));
+        return;
+      }
+
       const data = await response.json();
+
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert('Failed to start checkout');
+        alert('Failed to get payment session URL');
       }
     } catch (err) {
-      console.error('Checkout error', err);
-      alert('Checkout failed');
+      console.error('Error creating Stripe session:', err);
+      alert('An error occurred while paying. Please try again later.');
     }
   }}
 >
   {plan.buttonText}
 </button>
+
 
                 </div>
               </div>
