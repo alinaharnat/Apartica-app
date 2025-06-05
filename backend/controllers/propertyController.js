@@ -534,6 +534,7 @@ const getPropertyById = asyncHandler(async (req, res) => {
         rating: review.overallRating,
         createdAt: review.createdAt,
       })),
+      isListed: property.isListed,
     });
   } catch (error) {
     console.error('getPropertyById error:', error);
