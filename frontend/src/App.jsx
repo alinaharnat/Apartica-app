@@ -83,7 +83,7 @@ const App = () => {
         <Route path="/admin/bookings" element={<BookingManagementPage />} />
         <Route path="/manage-bookings" element={<BookingManagementPage />} />
         <Route path="/my-properties" element={<MyPropertiesPage />} />
-        <Route path="/subscription" element={<SubscriptionPlansPage />} />
+        <Route path="/subscription-plans" element={<SubscriptionPlansPage />} />
         {/* <Route path="/payment-success" element={<PaymentSuccess />} /> */}
       </Routes>
     </LoadScript>

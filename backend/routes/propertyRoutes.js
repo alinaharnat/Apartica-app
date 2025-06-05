@@ -89,5 +89,5 @@ router.delete('/:id', protect, async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
-
+router.get('/rooms', protect, getRoomsByPropertyIds);
 module.exports = router;

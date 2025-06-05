@@ -648,7 +648,26 @@ const getPropertiesByOwner = asyncHandler(async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+const getRoomsByPropertyIds = asyncHandler(async (req, res) => {
+  try {
+    const { propertyIds } = req.query;
 
+    if (!propertyIds) {
+      res.status(400);
+      throw new Error('Property IDs are required');
+    }
+
+    const propertyIdArray = propertyIds.split(',').map(id => mongoose.Types.ObjectId(id));
+
+    const rooms = await Room.find({ propertyId: { $in: propertyIdArray } }).lean();
+
+    res.json(rooms);
+  } catch (error) {
+    console.error('Error in getRoomsByPropertyIds:', error.message, error.stack);
+    res.status(500);
+    throw new Error('Server error');
+  }
+});
 module.exports = {
   createPropertyWithRooms: [
     upload.fields([
@@ -663,4 +682,5 @@ module.exports = {
   getUnavailableDates,
   getFormData,
   getPropertiesByOwner,
+  getRoomsByPropertyIds,
 };

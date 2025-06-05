@@ -75,12 +75,12 @@ const BookingManagementPage = () => {
       // Use different endpoints based on user role
       const endpoint = userData.userType === 'Admin' 
         ? '/api/admin/bookings'
-        : `/api/bookings/user/${userData.userId}`;
+        : '/api/booking/owner';
         
-      const res = await axios.get(endpoint, {
+      const res = await axios.get(`http://localhost:5000${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setBookings(res.data);
+      setBookings(res.data.currentBookings || []);
       setError(null);
     } catch (err) {
       setError('Failed to load bookings');

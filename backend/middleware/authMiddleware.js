@@ -27,4 +27,7 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+// Auth middleware is the same as protect for now
+const auth = protect;
+
+module.exports = { protect, auth };

@@ -28,7 +28,7 @@ const createBookingWithPayment = asyncHandler(async (req, res) => {
 
     const renterId = req.user?._id;
 
-    // Перевірка наявності всіх обов’язкових полів
+    // Перевірка наявності всіх обов'язкових полів
     if (!renterId || !propertyId || !roomId || !startDate || !endDate || !guests || !totalPrice || !guestFullName || !paymentMethod) {
       res.status(400);
     }
@@ -242,48 +242,45 @@ const handlePaymentCancel = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc Get all bookings for a user
+// @desc Get user's bookings
 // @route GET /booking/user
 // @access Private
 const getUserBookings = asyncHandler(async (req, res) => {
   try {
-    const renterId = req.user?._id;
+    const userId = req.user._id;
+    const currentDate = new Date();
 
-    if (!renterId) {
-      res.status(401);
-      throw new Error('User not authenticated');
-    }
-
-    const bookings = await Booking.find({ renterId })
+    // Find all bookings for the user
+    const allBookings = await Booking.find({ renterId: userId })
       .populate({
         path: 'roomId',
-        select: 'propertyId',
+        select: 'propertyId bedrooms bathrooms',
         populate: {
           path: 'propertyId',
           select: 'title address cityId',
           populate: {
             path: 'cityId',
-            select: 'name',
-          },
-        },
-      })
-      .lean();
+            select: 'name'
+          }
+        }
+      });
 
-    const currentBookings = bookings.filter(
-      (booking) => booking.status === 'pending' || booking.status === 'confirmed'
+    // Separate current and past bookings
+    const currentBookings = allBookings.filter(booking => 
+      new Date(booking.checkOut) >= currentDate
     );
-    const pastBookings = bookings.filter(
-      (booking) => !['pending', 'confirmed'].includes(booking.status)
+
+    const pastBookings = allBookings.filter(booking => 
+      new Date(booking.checkOut) < currentDate
     );
 
     res.json({
       currentBookings,
-      pastBookings,
+      pastBookings
     });
   } catch (error) {
-    console.error('Error in getUserBookings:', error.message, error.stack);
-    res.status(500);
-    throw new Error('Server error');
+    console.error('Error fetching user bookings:', error);
+    res.status(500).json({ message: 'Error fetching bookings' });
   }
 });
 
@@ -479,6 +476,159 @@ const getRefundAmount = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc Get bookings for owner's properties
+// @route GET /booking/owner
+// @access Private
+const getOwnerBookings = asyncHandler(async (req, res) => {
+  try {
+    const ownerId = req.user._id;
+
+    // Find all properties owned by the user
+    const properties = await Property.find({ ownerId });
+    const propertyIds = properties.map(property => property._id);
+
+    // Find all rooms in these properties
+    const rooms = await Room.find({ propertyId: { $in: propertyIds } });
+    const roomIds = rooms.map(room => room._id);
+
+    // Get current date for filtering
+    const currentDate = new Date();
+
+    // Find all bookings for these rooms
+    const allBookings = await Booking.find({ roomId: { $in: roomIds } })
+      .populate({
+        path: 'roomId',
+        select: 'propertyId bedrooms bathrooms',
+        populate: {
+          path: 'propertyId',
+          select: 'title address cityId',
+          populate: {
+            path: 'cityId',
+            select: 'name'
+          }
+        }
+      })
+      .populate('renterId', 'name email phoneNumber');
+
+    // Separate current and past bookings
+    const currentBookings = allBookings.filter(booking => 
+      new Date(booking.checkOut) >= currentDate
+    );
+
+    const pastBookings = allBookings.filter(booking => 
+      new Date(booking.checkOut) < currentDate
+    );
+
+    res.json({
+      currentBookings,
+      pastBookings
+    });
+  } catch (error) {
+    console.error('Error fetching owner bookings:', error);
+    res.status(500).json({ message: 'Error fetching bookings' });
+  }
+});
+
+// @desc Get refund amount for a booking (owner)
+// @route GET /booking/:bookingId/owner/refund-amount
+// @access Private
+const getRefundAmountForOwner = asyncHandler(async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Check if the booking belongs to the owner's property
+    const room = await Room.findById(booking.roomId);
+    const property = await Property.findById(room.propertyId);
+
+    if (property.ownerId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to access this booking' });
+    }
+
+    // Calculate refund amount based on cancellation policy
+    const checkInDate = new Date(booking.checkIn);
+    const currentDate = new Date();
+    const daysUntilCheckIn = Math.ceil((checkInDate - currentDate) / (1000 * 60 * 60 * 24));
+
+    let refundAmount = 0;
+    if (daysUntilCheckIn > 7) {
+      // Full refund if cancelled more than 7 days before check-in
+      refundAmount = booking.totalPrice;
+    } else if (daysUntilCheckIn > 3) {
+      // 50% refund if cancelled 3-7 days before check-in
+      refundAmount = booking.totalPrice * 0.5;
+    }
+    // No refund if cancelled less than 3 days before check-in
+
+    res.json({ refundAmount });
+  } catch (error) {
+    console.error('Error calculating refund amount:', error);
+    res.status(500).json({ message: 'Error calculating refund amount' });
+  }
+});
+
+// @desc Cancel a booking (owner)
+// @route POST /booking/:bookingId/owner/cancel
+// @access Private
+const cancelBookingForOwner = asyncHandler(async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Check if the booking belongs to the owner's property
+    const room = await Room.findById(booking.roomId);
+    const property = await Property.findById(room.propertyId);
+
+    if (property.ownerId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to cancel this booking' });
+    }
+
+    // Calculate refund amount
+    const checkInDate = new Date(booking.checkIn);
+    const currentDate = new Date();
+    const daysUntilCheckIn = Math.ceil((checkInDate - currentDate) / (1000 * 60 * 60 * 24));
+
+    let refundAmount = 0;
+    if (daysUntilCheckIn > 7) {
+      refundAmount = booking.totalPrice;
+    } else if (daysUntilCheckIn > 3) {
+      refundAmount = booking.totalPrice * 0.5;
+    }
+
+    // Update booking status
+    booking.status = 'cancelled_by_owner';
+    await booking.save();
+
+    // Send cancellation email to guest
+    try {
+      await sendBookingCancellationEmail(
+        booking.guestEmail,
+        booking.guestFullName,
+        property.title,
+        refundAmount
+      );
+    } catch (emailError) {
+      console.error('Error sending cancellation email:', emailError);
+    }
+
+    res.json({
+      message: 'Booking cancelled successfully',
+      refundAmount
+    });
+  } catch (error) {
+    console.error('Error cancelling booking:', error);
+    res.status(500).json({ message: 'Error cancelling booking' });
+  }
+});
+
 module.exports = {
   createBookingWithPayment,
   handlePaymentSuccess,
@@ -486,4 +636,7 @@ module.exports = {
   getUserBookings,
   cancelBooking,
   getRefundAmount,
+  getOwnerBookings,
+  getRefundAmountForOwner,
+  cancelBookingForOwner
 };

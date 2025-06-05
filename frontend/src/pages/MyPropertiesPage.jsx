@@ -141,7 +141,13 @@ const MyPropertiesPage = () => {
             </button>
             <button
               className="bg-purple-700 text-white px-4 py-2 rounded text-sm hover:bg-purple-800"
-              onClick={() => navigate('/pricing')}
+              onClick={() => navigate('/manage-bookings')}
+            >
+              Manage bookings
+            </button>
+            <button
+              className="bg-purple-700 text-white px-4 py-2 rounded text-sm hover:bg-purple-800"
+              onClick={() => navigate('/subscription-plans')}
             >
               Get agency status
             </button>
