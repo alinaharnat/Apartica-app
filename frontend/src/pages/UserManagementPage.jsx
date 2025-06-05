@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useNavigate } from 'react-router-dom';
 
+// Default user object for form initialization
 const emptyUser = {
   name: '',
   email: '',
@@ -14,66 +15,62 @@ const emptyUser = {
   birthDate: '',
 };
 
-const ConfirmModal = ({ message, onConfirm, onCancel }) => {
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
-        <p className="mb-6 text-center">{message}</p>
-        <div className="flex justify-end space-x-4">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 rounded border hover:bg-gray-100"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Delete
-          </button>
-        </div>
+// Modal for confirming user deletion
+const ConfirmModal = ({ message, onConfirm, onCancel }) => (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+      <p className="mb-6 text-center">{message}</p>
+      <div className="flex justify-end space-x-4">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 rounded border hover:bg-gray-100"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+        >
+          Delete
+        </button>
       </div>
     </div>
-  );
-};
-
+  </div>
+);
 
 const UserManagementPage = () => {
   const [user, setUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState(emptyUser);
   const [formErrors, setFormErrors] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
-
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
 
   const navigate = useNavigate();
 
+  // Check user authentication and authorization on mount
   useEffect(() => {
     const stored = localStorage.getItem('user');
-    if (stored) {
-      const userData = JSON.parse(stored);
-      if (userData.isBlocked) {
-        navigate('/');
-        // Optionally set notification via a global state (e.g., Redux) or URL param
-      } else if (userData.userType.includes('Administrator')) {
-        setUser(userData);
-        fetchUsers();
-      } else {
-        navigate('/');
-      }
-    } else {
+    if (!stored) {
       navigate('/auth');
+      return;
+    }
+    const userData = JSON.parse(stored);
+    if (userData.isBlocked) {
+      navigate('/');
+    } else if (userData.userType.includes('Administrator')) {
+      setUser(userData);
+      fetchUsers();
+    } else {
+      navigate('/');
     }
   }, [navigate]);
 
-
+  // Fetch all users from the backend
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -83,77 +80,113 @@ const UserManagementPage = () => {
       });
       setUsers(res.data);
       setError(null);
-    } catch {
+    } catch (err) {
       setError('Failed to load users');
     } finally {
       setLoading(false);
     }
   };
 
+  // Map backend gender (lowercase) to frontend (capitalized)
+  const sanitizeGender = (gender) => {
+    const genderMap = {
+      male: 'Male',
+      female: 'Female',
+      other: 'Other',
+      '': '',
+    };
+    return genderMap[gender] || '';
+  };
+
+  // Format date as "DD MMM YYYY" (e.g., "05 Jun 2025")
+  const formatDate = (dateString) =>
+    dateString
+      ? new Intl.DateTimeFormat('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }).format(new Date(dateString))
+      : '-';
+
+  // Start editing a user
   const startEdit = (user) => {
     setEditingUser(user);
     setFormData({
-      name: user.name,
-      email: user.email,
+      name: user.name || '',
+      email: user.email || '',
       phoneNumber: user.phoneNumber || '',
-      userType: Array.isArray(user.userType) ? user.userType[0] || 'Renter' : user.userType || 'Renter', // Handle array or string
-      isBlocked: user.isBlocked || false,
-      gender: user.gender || '',
-      birthDate: user.birthDate ? user.birthDate.slice(0, 10) : '',
+      userType: Array.isArray(user.userType)
+        ? user.userType[0] || 'Renter'
+        : user.userType || 'Renter',
+      isBlocked: !!user.isBlocked,
+      gender: sanitizeGender(user.gender),
+      birthDate: user.dateOfBirth ? user.dateOfBirth.slice(0, 10) : '',
     });
     setFormErrors([]);
   };
 
+  // Cancel editing
   const cancelEdit = () => {
     setEditingUser(null);
     setFormData(emptyUser);
     setFormErrors([]);
   };
 
+  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (name === 'userType') {
-      setFormData((prev) => ({ ...prev, userType: value })); // Set single value
-    } else if (type === 'checkbox') {
-      setFormData((prev) => ({ ...prev, [name]: checked }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
   };
 
+  // Save user (create or update)
   const handleSave = async () => {
     const isEdit = !!editingUser;
     const validationErrors = validateUserForm(formData, isEdit);
 
     if (validationErrors.length > 0) {
+      console.log('Validation errors:', validationErrors);
       setFormErrors(validationErrors);
       return;
-    } else {
-      setFormErrors([]);
     }
+    setFormErrors([]);
 
     setIsSaving(true);
     const token = localStorage.getItem('token');
 
     try {
+      const payload = {
+        ...formData,
+        userType: [formData.userType], // Ensure array for backend
+        gender: formData.gender.toLowerCase(), // Convert to lowercase
+        dateOfBirth: formData.birthDate || undefined, // Map to backend field
+      };
+      console.log('Saving payload:', payload);
+
       if (isEdit) {
-        await axios.put(`/api/admin/users/${editingUser._id}`, formData, {
+        await axios.put(`/api/admin/users/${editingUser._id}`, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        await axios.post(`/api/admin/users`, formData, {
+        await axios.post(`/api/admin/users`, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
       await fetchUsers();
       cancelEdit();
     } catch (err) {
-      setFormErrors([err.response?.data?.message || err.message || 'Unknown error occurred']);
+      const errorMessage =
+        err.response?.data?.message || err.message || 'Unknown error occurred';
+      console.error('Save error:', errorMessage);
+      setFormErrors([errorMessage]);
     } finally {
       setIsSaving(false);
     }
   };
 
+  // Validate form data
   const validateUserForm = (data, isEditMode = false) => {
     const errors = [];
 
@@ -178,37 +211,38 @@ const UserManagementPage = () => {
     if (!allowedRoles.includes(data.userType)) {
       errors.push('Invalid role value.');
     }
-    
+
     if (data.birthDate) {
       const birth = new Date(data.birthDate);
       const now = new Date();
       if (isNaN(birth.getTime())) {
         errors.push('Invalid birth date.');
+      } else if (birth > now) {
+        errors.push('Birth date cannot be in the future.');
       } else {
-        if (birth > now) {
-          errors.push('Birth date cannot be in the future.');
-        }
-
         const age = now.getFullYear() - birth.getFullYear();
         const monthDiff = now.getMonth() - birth.getMonth();
         const dayDiff = now.getDate() - birth.getDate();
-        const fullAge = monthDiff > 0 || (monthDiff === 0 && dayDiff >= 0) ? age : age - 1;
+        const fullAge =
+          monthDiff > 0 || (monthDiff === 0 && dayDiff >= 0) ? age : age - 1;
         if (fullAge < 18) {
           errors.push('User must be at least 18 years old.');
         }
       }
     } else if (!isEditMode) {
-      // allow empty birthDate in create mode
+      // Allow empty birthDate in create mode
     }
 
     return errors;
   };
 
+  // Confirm user deletion
   const confirmDelete = (user) => {
     setUserToDelete(user);
     setShowConfirmModal(true);
   };
 
+  // Delete user
   const handleDelete = async () => {
     if (!userToDelete) return;
 
@@ -226,6 +260,7 @@ const UserManagementPage = () => {
     }
   };
 
+  // Check if user is admin or moderator for styling
   const isAdminOrModerator = (user) => {
     const role = Array.isArray(user.userType) ? user.userType[0] : user.userType;
     return role === 'Administrator' || role === 'Moderator';
@@ -242,7 +277,7 @@ const UserManagementPage = () => {
         ) : error ? (
           <p className="text-center text-red-600">{error}</p>
         ) : (
-          <>
+          <div>
             <div className="overflow-x-auto mb-8">
               <table className="min-w-full bg-white rounded shadow">
                 <thead>
@@ -264,9 +299,13 @@ const UserManagementPage = () => {
                     >
                       <td className="py-2 px-4 font-medium">{user.name}</td>
                       <td className="py-2 px-4">{user.email}</td>
-                      <td className="py-2 px-4">{Array.isArray(user.userType) ? user.userType.join(', ') : user.userType}</td>
-                      <td className="py-2 px-4">{user.gender || '-'}</td>
-                      <td className="py-2 px-4">{user.birthDate ? user.birthDate.slice(0, 10) : '-'}</td>
+                      <td className="py-2 px-4">
+                        {Array.isArray(user.userType)
+                          ? user.userType.join(', ')
+                          : user.userType}
+                      </td>
+                      <td className="py-2 px-4">{sanitizeGender(user.gender) || '-'}</td>
+                      <td className="py-2 px-4">{formatDate(user.dateOfBirth)}</td>
                       <td className="py-2 px-4">
                         {user.isBlocked ? (
                           <span className="text-red-600 font-semibold">Blocked</span>
@@ -282,7 +321,7 @@ const UserManagementPage = () => {
                           Edit
                         </button>
                         <button
-                           onClick={() => confirmDelete(user)}
+                          onClick={() => confirmDelete(user)}
                           className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
                         >
                           Delete
@@ -300,9 +339,9 @@ const UserManagementPage = () => {
               </h2>
 
               {formErrors.length > 0 && (
-                <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                  <p className="font-semibold">Please fix the following errors:</p>
-                  <ul className="list-disc list-inside mt-2">
+                <div className="mb-4 bg-red-100 border border-red-600 text-red-700 px-4 py-3 rounded-lg">
+                  <p className="font-semibold mb-2">Please fix the following errors:</p>
+                  <ul className="list-disc pl-5">
                     {formErrors.map((err, i) => (
                       <li key={i}>{err}</li>
                     ))}
@@ -310,8 +349,6 @@ const UserManagementPage = () => {
                 </div>
               )}
 
-              {/* Форма редактирования / создания */}
-              {/* Остальные поля */}
               <label className="block mb-3">
                 Name
                 <input
@@ -350,25 +387,30 @@ const UserManagementPage = () => {
 
               <fieldset className="mb-4">
                 <legend className="font-semibold mb-2">Roles</legend>
-                {['Renter', 'PropertyOwner', 'Administrator', 'Moderator'].map((role) => (
-                  <label key={role} className="inline-flex items-center mr-6 mb-2">
-                    <input
-                      type="radio"
-                      name="userType"
-                      value={role}
-                      checked={formData.userType.includes(role)}
-                      onChange={handleInputChange}
-                      className="mr-2"
-                    />
-                    {role}
-                  </label>
-                ))}
+                {['Renter', 'PropertyOwner', 'Administrator', 'Moderator'].map(
+                  (role) => (
+                    <label key={role} className="inline-flex items-center mr-6 mb-2">
+                      <input
+                        type="radio"
+                        name="userType"
+                        value={role}
+                        checked={formData.userType === role}
+                        onChange={handleInputChange}
+                        className="mr-2"
+                      />
+                      {role}
+                    </label>
+                  ),
+                )}
               </fieldset>
 
               <fieldset className="mb-4">
                 <legend className="font-semibold mb-2">Gender</legend>
                 {['Male', 'Female', 'Other', ''].map((g) => (
-                  <label key={g || 'none'} className="inline-flex items-center mr-6 mb-2">
+                  <label
+                    key={g || 'none'}
+                    className="inline-flex items-center mr-6 mb-2"
+                  >
                     <input
                       type="radio"
                       name="gender"
@@ -405,7 +447,10 @@ const UserManagementPage = () => {
               </label>
 
               <div className="flex justify-end space-x-4">
-                <button onClick={cancelEdit} className="px-4 py-2 rounded border">
+                <button
+                  onClick={cancelEdit}
+                  className="px-4 py-2 rounded border hover:bg-gray-100"
+                >
                   Cancel
                 </button>
                 <button
@@ -417,7 +462,7 @@ const UserManagementPage = () => {
                 </button>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {showConfirmModal && (
