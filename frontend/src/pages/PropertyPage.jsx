@@ -29,12 +29,12 @@ const PropertyPage = () => {
   const [availableRooms, setAvailableRooms] = useState([]);
   const [startDate, setStartDate] = useState(() => {
     const date = new Date(new Date().setDate(new Date().getDate() + 7));
-    date.setHours(0, 0, 0, 0);
+    date.setUTCHours(0, 0, 0, 0); // Встановлюємо 00:00:00 UTC
     return date;
   });
   const [endDate, setEndDate] = useState(() => {
     const date = new Date(new Date().setDate(new Date().getDate() + 8));
-    date.setHours(0, 0, 0, 0);
+    date.setUTCHours(0, 0, 0, 0); // Встановлюємо 00:00:00 UTC
     return date;
   });
   const [guests, setGuests] = useState(1);
@@ -66,12 +66,12 @@ const PropertyPage = () => {
 
     if (urlCheckIn && !isNaN(urlCheckIn.getTime())) {
       newStartDate = new Date(urlCheckIn);
-      newStartDate.setHours(0, 0, 0, 0);
+      newStartDate.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
       console.log('Set startDate:', newStartDate);
     }
     if (urlCheckOut && !isNaN(urlCheckOut.getTime())) {
       newEndDate = new Date(urlCheckOut);
-      newEndDate.setHours(0, 0, 0, 0);
+      newEndDate.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
       console.log('Set endDate:', newEndDate);
     }
 
@@ -243,8 +243,8 @@ const PropertyPage = () => {
   const calculateNights = (start, end) => {
     const startCopy = new Date(start);
     const endCopy = new Date(end);
-    startCopy.setHours(0, 0, 0, 0);
-    endCopy.setHours(0, 0, 0, 0);
+    startCopy.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
+    endCopy.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
     const diffTime = endCopy - startCopy;
     return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
   };
@@ -269,14 +269,14 @@ const PropertyPage = () => {
     }
     navigate('/booking', {
       state: {
-        startDate,
-        endDate,
+        startDate: new Date(startDate).toISOString(), // Передаємо в UTC
+        endDate: new Date(endDate).toISOString(), // Передаємо в UTC
         guests,
         totalPrice,
         propertyId: id,
         selectedRoom,
-        isFirstBooking
-      }
+        isFirstBooking,
+      },
     });
   };
 
@@ -531,12 +531,12 @@ const PropertyPage = () => {
                     selected={startDate}
                     onChange={date => {
                       const newDate = new Date(date);
-                      newDate.setHours(0, 0, 0, 0);
+                      newDate.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
                       setStartDate(newDate);
                       if (newDate >= endDate) {
                         const newEndDate = new Date(newDate);
                         newEndDate.setDate(newEndDate.getDate() + 1);
-                        newEndDate.setHours(0, 0, 0, 0);
+                        newEndDate.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
                         setEndDate(newEndDate);
                       }
                     }}
@@ -555,7 +555,7 @@ const PropertyPage = () => {
                     selected={endDate}
                     onChange={date => {
                       const newDate = new Date(date);
-                      newDate.setHours(0, 0, 0, 0);
+                      newDate.setUTCHours(0, 0, 0, 0); // Нормалізуємо до UTC
                       setEndDate(newDate || new Date(startDate.getTime() + 24 * 60 * 60 * 1000));
                     }}
                     selectsEnd
@@ -696,7 +696,7 @@ const PropertyPage = () => {
               ))}
             </div>
           ) : (
-            <p className="text-center text-red-500">No rooms available for the selected dates.</p>
+            <p className="text-center text-red-500">No rooms available for the selected options.</p>
           )}
         </div>
 

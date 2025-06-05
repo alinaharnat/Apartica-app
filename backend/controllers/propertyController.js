@@ -559,15 +559,23 @@ const getAvailableRooms = asyncHandler(async (req, res) => {
     }
 
     const rooms = await Room.find({ propertyId: id, maxGuests: { $gte: parseInt(guests) } });
+
+    // Знаходимо бронювання, які перетинаються з обраним періодом
     const bookings = await Booking.find({
       roomId: { $in: rooms.map(room => room._id) },
       status: { $in: ['pending', 'confirmed'] },
-      $or: [
-        { checkIn: { $lte: new Date(endDate) }, checkOut: { $gte: new Date(startDate) } },
+      $and: [
+        { checkIn: { $lt: new Date(endDate) } }, // checkIn < endDate
+        { checkOut: { $gt: new Date(startDate) } }, // checkOut > startDate
       ],
     });
 
-    const unavailableRoomIds = bookings.map(booking => booking.roomId.toString());
+    // Виключаємо бронювання, де checkIn дорівнює endDate
+    const conflictingBookings = bookings.filter(
+      booking => !(booking.checkIn.getTime() === new Date(endDate).getTime())
+    );
+
+    const unavailableRoomIds = conflictingBookings.map(booking => booking.roomId.toString());
     const availableRooms = rooms.filter(room => !unavailableRoomIds.includes(room._id.toString()));
 
     const roomsWithPhotos = await Promise.all(
