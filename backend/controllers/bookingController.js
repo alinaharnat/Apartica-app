@@ -24,6 +24,7 @@ const createBookingWithPayment = asyncHandler(async (req, res) => {
       guestFullName,
       paymentMethod,
       userDetails,
+      
     } = req.body;
 
     const renterId = req.user?._id;

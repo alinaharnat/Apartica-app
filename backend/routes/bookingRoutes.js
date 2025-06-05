@@ -7,6 +7,7 @@ const {
   getUserBookings,
   cancelBooking,
   getRefundAmount,
+  getOwnerBookings,
 } = require('../controllers/bookingController');
 const { protect } = require('../middleware/authMiddleware');
 

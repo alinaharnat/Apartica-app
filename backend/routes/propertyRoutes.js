@@ -8,10 +8,11 @@ const {
   getUnavailableDates,
   getFormData,
   getPropertiesByOwner,
+  getRoomsByPropertyIds, // Add this to the import
 } = require('../controllers/propertyController');
 const { protect } = require('../middleware/authMiddleware');
-const Property = require('../models/property'); // Add this import
-const User = require('../models/user'); // Add this import
+const Property = require('../models/property');
+const User = require('../models/user');
 
 // IMPORTANT: Put specific routes BEFORE parameterized routes
 router.get('/form-data', protect, getFormData);
@@ -89,5 +90,8 @@ router.delete('/:id', protect, async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
+// Consolidated route for /rooms
 router.get('/rooms', protect, getRoomsByPropertyIds);
+
 module.exports = router;
