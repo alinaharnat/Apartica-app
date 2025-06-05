@@ -42,14 +42,16 @@ const ModeratorPropertyManagementPage = () => {
   const [propertyToDelete, setPropertyToDelete] = useState(null);
   const navigate = useNavigate();
 
-  // Check authentication and fetch properties on mount
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
       const userData = JSON.parse(stored);
-      if (userData.userType.includes('Moderator')) {
+      if (userData.isBlocked) {
+        navigate('/');
+        // Optionally set notification via a global state (e.g., Redux) or URL param
+      } else if (userData.userType.includes('Moderator')) {
         setUser(userData);
-        fetchProperties();
+        fetchUsers();
       } else {
         navigate('/');
       }

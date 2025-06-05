@@ -58,13 +58,20 @@ const BookingManagementPage = () => {
     const stored = localStorage.getItem('user');
     if (stored) {
       const userData = JSON.parse(stored);
-      setUser(userData);
-      fetchBookings();
-      fetchDropdownData();
+      if (userData.isBlocked) {
+        navigate('/');
+        // Optionally set notification via a global state (e.g., Redux) or URL param
+      } else if (userData.userType.includes('Administrator')) {
+        setUser(userData);
+        fetchUsers();
+      } else {
+        navigate('/');
+      }
     } else {
       navigate('/auth');
     }
   }, [navigate]);
+
 
   const fetchBookings = async () => {
     setLoading(true);

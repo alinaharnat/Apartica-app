@@ -5,12 +5,15 @@ const {
   registerUser,
   emailLogin,
   verifyEmail,
-  googleCallback
+  googleCallback,
+  getCurrentUser,
 } = require('../controllers/authController');
+const { protect } = require('../middleware/authMiddleware');
 
 router.post('/register', registerUser);
 router.post('/email-login', emailLogin);
 router.post('/verify-email', verifyEmail);
+router.get('/me', protect, getCurrentUser); // Ensure this route exists
 
 // Google OAuth
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));

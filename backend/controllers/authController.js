@@ -14,6 +14,10 @@ const registerUser = asyncHandler(async (req, res) => {
 
   let user = await User.findOne({ email: email.toLowerCase() });
   if (user) {
+    if (user.isBlocked) {
+      res.status(403);
+      throw new Error('Your account is blocked. Please contact support.');
+    }
     if (!user.isEmailVerified) {
       const verificationToken = generateEmailVerificationToken();
       user.emailVerificationToken = verificationToken;
@@ -45,6 +49,7 @@ const registerUser = asyncHandler(async (req, res) => {
     profilePicture: profilePicture || '',
     userType: ['Renter'],
     isEmailVerified: false,
+    isBlocked: false,
   });
 
   const verificationToken = generateEmailVerificationToken();
@@ -71,6 +76,11 @@ const emailLogin = asyncHandler(async (req, res) => {
   if (!user) {
     res.status(404);
     throw new Error('User not found. Please register.');
+  }
+
+  if (user.isBlocked) {
+    res.status(403);
+    throw new Error('Your account is blocked. Please contact support.');
   }
 
   const token = generateEmailVerificationToken();
@@ -114,6 +124,11 @@ const verifyEmail = asyncHandler(async (req, res) => {
     throw new Error('Invalid or expired verification code.');
   }
 
+  if (user.isBlocked) {
+    res.status(403);
+    throw new Error('Your account is blocked. Please contact support.');
+  }
+
   const isInitialVerification = !user.isEmailVerified;
 
   user.isEmailVerified = true;
@@ -135,6 +150,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
       isEmailVerified: user.isEmailVerified,
       phoneNumber: user.phoneNumber,
       profilePicture: user.profilePicture,
+      isBlocked: user.isBlocked,
     },
     token: authToken,
   });
@@ -144,6 +160,10 @@ const googleCallback = asyncHandler(async (req, res) => {
   if (!req.user) {
     console.error('Google callback: req.user is undefined');
     return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_auth_failed_user_undefined`);
+  }
+
+  if (req.user.isBlocked) {
+    return res.redirect(`${process.env.FRONTEND_URL}/?error=account_blocked`);
   }
 
   const token = generateToken(req.user._id);
@@ -157,10 +177,27 @@ const googleCallback = asyncHandler(async (req, res) => {
     userType: req.user.userType,
     isEmailVerified: req.user.isEmailVerified,
     profilePicture: req.user.profilePicture,
+    isBlocked: req.user.isBlocked,
     token: token,
   };
 
   res.redirect(`${process.env.FRONTEND_URL}/auth-success?userData=${encodeURIComponent(JSON.stringify(userDataToStore))}`);
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  const user = req.user; // Set by the protect middleware
+  res.status(200).json({
+    _id: user._id,
+    userId: user.userId,
+    name: user.name,
+    displayName: user.displayName,
+    email: user.email,
+    userType: user.userType,
+    isEmailVerified: user.isEmailVerified,
+    phoneNumber: user.phoneNumber,
+    profilePicture: user.profilePicture,
+    isBlocked: user.isBlocked,
+  });
 });
 
 module.exports = {
@@ -168,4 +205,5 @@ module.exports = {
   emailLogin,
   verifyEmail,
   googleCallback,
+  getCurrentUser,
 };

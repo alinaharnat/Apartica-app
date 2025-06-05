@@ -40,12 +40,15 @@ const ModeratorUserManagementPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
 
-  // Check authentication and fetch users on mount
+  
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
       const userData = JSON.parse(stored);
-      if (userData.userType.includes('Moderator')) {
+      if (userData.isBlocked) {
+        navigate('/');
+        // Optionally set notification via a global state (e.g., Redux) or URL param
+      } else if (userData.userType.includes('Moderator')) {
         setUser(userData);
         fetchUsers();
       } else {
@@ -55,7 +58,7 @@ const ModeratorUserManagementPage = () => {
       navigate('/auth');
     }
   }, [navigate]);
-
+  
   // Fetch all users from the API
   const fetchUsers = async () => {
     setLoading(true);
