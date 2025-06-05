@@ -24,7 +24,6 @@ const createBookingWithPayment = asyncHandler(async (req, res) => {
       guestFullName,
       paymentMethod,
       userDetails,
-      
     } = req.body;
 
     const renterId = req.user?._id;
@@ -107,7 +106,7 @@ const createBookingWithPayment = asyncHandler(async (req, res) => {
         amount: totalPrice,
         paymentMethod: 'stripe',
         transactionId: session.id,
-        status: 'pending',
+        status: 'confirmed',
       });
 
       await payment.save();
@@ -155,7 +154,7 @@ const handlePaymentSuccess = asyncHandler(async (req, res) => {
         checkIn: new Date(session.metadata.startDate),
         checkOut: new Date(session.metadata.endDate),
         totalPrice: parseFloat(session.metadata.totalPrice),
-        status: 'confirmed',
+        status: 'pending',
         numberOfGuests: parseInt(session.metadata.guests),
         guestFullName: session.metadata.guestFullName,
         guestEmail: session.metadata.guestEmail,

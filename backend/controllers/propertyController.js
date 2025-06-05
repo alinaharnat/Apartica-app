@@ -278,10 +278,7 @@ const getProperties = asyncHandler(async (req, res) => {
     sort = '-positiveReviewCount', // По умолчанию сортировка по количеству положительных отзывов
   } = req.query;
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 46226abb294a5ff553f28d4836600f14dec2c2fe
   try {
     const filter = { isListed: true };
 
@@ -311,11 +308,8 @@ const getProperties = asyncHandler(async (req, res) => {
       const amenityDocs = await Amenity.find({ name: { $in: amenityNames } });
       if (amenityDocs.length > 0) {
         filter.amenities = { $all: amenityDocs.map(doc => doc._id) };
-<<<<<<< HEAD
-=======
       } else {
         return res.status(200).json([]);
->>>>>>> 46226abb294a5ff553f28d4836600f14dec2c2fe
       }
     }
 
@@ -334,12 +328,9 @@ const getProperties = asyncHandler(async (req, res) => {
       }
     });
 
-<<<<<<< HEAD
     // Агрегация для подсчета положительных отзывов
-=======
 
     // Aggregation pipeline
->>>>>>> 46226abb294a5ff553f28d4836600f14dec2c2fe
     const pipeline = [
       // Фильтрация по базовым условиям
       { $match: filter },
@@ -478,10 +469,7 @@ const getProperties = asyncHandler(async (req, res) => {
       })
     ).then(results => results.filter(property => property !== null));
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 46226abb294a5ff553f28d4836600f14dec2c2fe
 
     if (!propertiesData.length) {
       return res.status(200).json([]);
