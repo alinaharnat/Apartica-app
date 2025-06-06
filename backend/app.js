@@ -34,7 +34,8 @@ app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173',
     'http://192.168.0.210:19006', // Походження Metro (React Native)
-    'http://10.0.2.2:5000',       // Походження для Android емулятора
+    'http://10.0.2.2:5000',
+    'https://apartica-frontend.onrender.com/'
   ],       // Походження для Android емулятора
   credentials: true
 }));
