@@ -1,6 +1,6 @@
 // cronJobs.js
 const cron = require('node-cron');
-const Booking = require('../models/Booking');
+const Booking = require('../models/booking');
 
 // Функція для оновлення статусів бронювань
 const updateBookingStatus = async () => {

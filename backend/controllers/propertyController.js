@@ -714,7 +714,7 @@ const deleteProperty = asyncHandler(async (req, res) => {
       property.isListed = false;
       await property.save();
       return res.status(200).json({
-        message: 'Property has active bookings and cannot be deleted. It has been unlisted instead.',
+        message: 'Property has active bookings and cannot be deleted. It has been unlisted instead. \n Contact Apartica support to list it again, if you changed your mind.',
         isListed: false,
       });
     }

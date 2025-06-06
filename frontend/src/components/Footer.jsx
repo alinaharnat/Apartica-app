@@ -5,7 +5,7 @@ import facebook from '../assets/facebook.png';
 import instagram from '../assets/instagram.png';
 import twitter from '../assets/twitter.png';
 import flag from '../assets/flag.png';
-import bee from '../assets/bee.jpg';
+import bee from '../assets/shmel_logo.png';
 import { Link } from 'react-router-dom'; // <-- ІМПОРТУЙТЕ LINK
 
 const Footer = () => {
@@ -17,10 +17,9 @@ const Footer = () => {
         {/* Left block (Language/Currency/Links) */}
         <div className="flex items-center gap-x-4 gap-y-2 text-xs md:text-sm text-gray-700 flex-wrap"> {/* Додав flex-wrap та gap-y-2 для кращого переносу на малих екранах */}
           <span className="flex items-center gap-1">
-            <img src={flag} alt="Language Flag" className="h-4 w-auto" /> {/* Додав alt для зображення */}
-            <span>English</span>
+            <img src={flag} alt="Currency Flag" className="h-4 w-auto" /> {/* Додав alt для зображення */}
+            <span>EUR</span>
           </span>
-          <span>EUR</span>
           <Link to="/rules" className="text-gray-700 font-semibold hover:text-purple-600 transition-colors duration-200">
              About us
           </Link>
@@ -34,22 +33,22 @@ const Footer = () => {
           <p className="text-[11px]">Copyright © 1989–{currentYear} “Apartica”. All rights reserved.</p> {/* Використано динамічний рік */}
           <div className="mt-1 flex items-center justify-center"> {/* Додав flex для центрування логотипу і тексту */}
             <img src={bee} alt="Shmel's Group Logo" className="h-5 inline-block" /> {/* Додав alt */}
-            <span className="ml-1 font-semibold text-gray-700">Shmel’s Group</span> {/* Змінив колір для кращої видимості */}
+            <span className="ml-1 font-semibold text-gray-700"></span> {/* Змінив колір для кращої видимості */}
           </div>
         </div>
 
         {/* Right block (Social Icons) */}
         <div className="flex items-center gap-4 mt-4 md:mt-0"> {/* Змінив gap-3 на gap-4 для відповідності іншим блокам */}
-          <a href="https://telegram.org" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-purple-600 transition-colors duration-200"> {/* Змінив колір, додав target та rel */}
+          <a href="https://t.me/apartica" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-purple-600 transition-colors duration-200"> {/* Змінив колір, додав target та rel */}
             <img src={telegram} alt="Telegram" className="w-5 h-5" />
           </a>
-          <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-purple-600 transition-colors duration-200">
+          <a href="https://www.facebook.com/share/191nqYBu8a/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-purple-600 transition-colors duration-200">
             <img src={facebook} alt="Facebook" className="w-5 h-5" />
           </a>
-          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-purple-600 transition-colors duration-200">
+          <a href="https://www.instagram.com/apartica.stay?igsh=MTdrZ2hwMG94MzhocA==" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-purple-600 transition-colors duration-200">
             <img src={instagram} alt="Instagram" className="w-5 h-5" />
           </a>
-          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-purple-600 transition-colors duration-200">
+          <a href="https://x.com/apartica_stay" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-purple-600 transition-colors duration-200">
             <img src={twitter} alt="Twitter" className="w-5 h-5" />
           </a>
         </div>

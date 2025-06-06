@@ -30,16 +30,18 @@ const createBookingWithPayment = asyncHandler(async (req, res) => {
 
     // Перевірка наявності всіх обов’язкових полів
     if (!renterId || !propertyId || !roomId || !startDate || !endDate || !guests || !totalPrice || !guestFullName || !paymentMethod) {
-      res.status(400);
+      return res.status(400).json({ message: 'Missing required fields: renterId, propertyId, roomId, startDate, endDate, guests, totalPrice, guestFullName, or paymentMethod' });
     }
 
     // Перевірка наявності email і phoneNumber
     if (!userDetails?.email || !userDetails?.phoneNumber) {
-      res.status(400);
+      return res.status(400).json({ message: 'Missing user details: email and phoneNumber are required' });
     }
+
+    // Перевірка існування кімнати
     const room = await Room.findById(roomId);
     if (!room) {
-      res.status(404);
+      return res.status(404).json({ message: 'Room not found' });
     }
 
     // Перевірка, чи є активні бронювання на ці дати
@@ -47,26 +49,31 @@ const createBookingWithPayment = asyncHandler(async (req, res) => {
     const end = new Date(endDate);
     const existingBookings = await Booking.find({
       roomId: roomId,
-      status: { $in: ['pending', 'confirmed'] }, // Враховуємо бронювання зі статусами 'pending' або 'confirmed'
-      $or: [
-        { checkIn: { $lte: end }, checkOut: { $gte: start } }, // Перетинаються дати
+      status: { $in: ['pending', 'confirmed'] },
+      $and: [
+        { checkIn: { $lt: end } }, // checkIn < endDate
+        { checkOut: { $gt: start } }, // checkOut > startDate
       ],
     });
 
-    if (existingBookings.length > 0) {
-      res.status(400);
+    // Виключаємо бронювання, де checkIn дорівнює endDate, бо заїзд можливий після виїзду
+    const conflictingBookings = existingBookings.filter(
+      booking => !(booking.checkIn.getTime() === end.getTime())
+    );
+
+    if (conflictingBookings.length > 0) {
+      return res.status(400).json({ message: 'Room is already booked for the selected dates' });
     }
 
-    // Створення сесії оплати через Stripe з усіма даними в метадатах
+    // Створення сесії оплати через Stripe
     if (paymentMethod === 'stripe') {
-      const successUrl = `${req.protocol}://${req.get('host')}/api/booking/success?session_id={CHECKOUT_SESSION_ID}`;
-      const cancelUrl = `${req.protocol}://${req.get('host')}/api/booking/cancel?session_id={CHECKOUT_SESSION_ID}`;
-
-      // Перевірка коректності totalPrice
       const unitAmount = Math.round(totalPrice * 100);
       if (isNaN(unitAmount) || unitAmount <= 0) {
-        res.status(400);
+        return res.status(400).json({ message: 'Invalid totalPrice: must be a valid number greater than 0' });
       }
+
+      const successUrl = `${req.protocol}://${req.get('host')}/api/booking/success?session_id={CHECKOUT_SESSION_ID}`;
+      const cancelUrl = `${req.protocol}://${req.get('host')}/api/booking/cancel?session_id={CHECKOUT_SESSION_ID}`;
 
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
@@ -77,7 +84,7 @@ const createBookingWithPayment = asyncHandler(async (req, res) => {
               product_data: {
                 name: `Booking for ${propertyId} - Room ${roomId}`,
               },
-              unit_amount: unitAmount, // Stripe очікує суму в центах
+              unit_amount: unitAmount,
             },
             quantity: 1,
           },
@@ -113,11 +120,11 @@ const createBookingWithPayment = asyncHandler(async (req, res) => {
 
       res.json({ sessionId: session.id, url: session.url });
     } else {
-      res.status(400);
+      return res.status(400).json({ message: 'Invalid payment method. Only "stripe" is supported' });
     }
   } catch (error) {
     console.error('Error in createBookingWithPayment:', error.message, error.stack);
-    res.status(500);
+    res.status(500).json({ message: 'Server error during booking creation', error: error.message });
   }
 });
 

@@ -1,6 +1,6 @@
 // src/pages/ListPropertyPage.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import residentialImage from '../assets/residential 1.png';
@@ -100,37 +100,69 @@ const ListPropertyPage = () => {
                         </div>
                     </div>
                 </section>
+                {!localStorage.getItem('user') && (
+                  <section className="bg-[#E9E2F3] py-16 md:py-24 px-6 md:px-12 lg:px-24">
+                      <div className="container mx-auto flex flex-col lg:flex-row items-center justify-around gap-10 md:gap-16">
+                          <div className="lg:w-1/2 text-center lg:text-left">
+                              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800 mb-6 leading-tight">
+                                  Register and start getting bookings today!
+                              </h2>
+                          </div>
 
-                {/* Registration section: Encourage sign up */}
-                <section className="bg-[#E9E2F3] py-16 md:py-24 px-6 md:px-12 lg:px-24">
-                    <div className="container mx-auto flex flex-col lg:flex-row items-center justify-around gap-10 md:gap-16">
-                        <div className="lg:w-1/2 text-center lg:text-left">
-                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800 mb-6 leading-tight">
-                                Register and start getting bookings today!
-                            </h2>
-                        </div>
-
-                        <div className="lg:w-2/5 w-full max-w-md bg-white p-8 rounded-xl shadow-2xl">
-                            <h3 className="text-2xl font-bold mb-5 text-gray-700 text-center">Sign up for free</h3>
-                            <ul className="space-y-3 mb-6 text-sm text-gray-600">
-                                <li className="flex items-start">
-                                    <CheckCircleIconSolid className="w-5 h-5 text-green-500 mr-2 mt-0.5 shrink-0" />
-                                    <span>90% of hosts get at least 20 bookings per year</span>
-                                </li>
-                                <li className="flex items-start">
-                                    <CheckCircleIconSolid className="w-5 h-5 text-green-500 mr-2 mt-0.5 shrink-0" />
-                                    <span>Your property will be shown in the list of properties in your area</span>
-                                </li>
-                            </ul>
-                            <button
+                          <div className="lg:w-2/5 w-full max-w-md bg-white p-8 rounded-xl shadow-2xl">
+                              <h3 className="text-2xl font-bold mb-5 text-gray-700 text-center">Sign up for free</h3>
+                              <ul className="space-y-3 mb-6 text-sm text-gray-600">
+                                  <li className="flex items-start">
+                                      <CheckCircleIconSolid className="w-5 h-5 text-green-500 mr-2 mt-0.5 shrink-0" />
+                                      <span>90% of hosts get at least 20 bookings per year</span>
+                                  </li>
+                                  <li className="flex items-start">
+                                      <CheckCircleIconSolid className="w-5 h-5 text-green-500 mr-2 mt-0.5 shrink-0" />
+                                      <span>Your property will be shown in the list of properties in your area</span>
+                                  </li>
+                              </ul>
+                              <button
                                 onClick={handleGetStarted}
                                 className="w-full bg-[#8252A1] text-white font-semibold py-3.5 px-6 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition duration-300 text-lg shadow-md"
-                            >
-                                Get started now
-                            </button>
-                        </div>
-                    </div>
-                </section>
+                              >
+                                  Get started now
+                              </button>
+                          </div>
+                      </div>
+                  </section>
+                )}
+                {/* Registration section: Encourage sign up */}
+                {localStorage.getItem('user') && (
+                  <section className="bg-[#E9E2F3] py-16 md:py-24 px-6 md:px-12 lg:px-24">
+                      <div className="container mx-auto flex flex-col lg:flex-row items-center justify-around gap-10 md:gap-16">
+                          <div className="lg:w-1/2 text-center lg:text-left">
+                              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800 mb-6 leading-tight">
+                                  List your property and start getting bookings today!
+                              </h2>
+                          </div>
+
+                          <div className="lg:w-2/5 w-full max-w-md bg-white p-8 rounded-xl shadow-2xl">
+                              <h3 className="text-2xl font-bold mb-5 text-gray-700 text-center">List first two properties for free</h3>
+                              <ul className="space-y-3 mb-6 text-sm text-gray-600">
+                                  <li className="flex items-start">
+                                      <CheckCircleIconSolid className="w-5 h-5 text-green-500 mr-2 mt-0.5 shrink-0" />
+                                      <span>90% of hosts get at least 20 bookings per year</span>
+                                  </li>
+                                  <li className="flex items-start">
+                                      <CheckCircleIconSolid className="w-5 h-5 text-green-500 mr-2 mt-0.5 shrink-0" />
+                                      <span>Your property will be shown in the list of properties in your area</span>
+                                  </li>
+                              </ul>
+                              <button
+                                onClick={handleGetStarted}
+                                className="w-full bg-[#8252A1] text-white font-semibold py-3.5 px-6 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition duration-300 text-lg shadow-md"
+                              >
+                                  List property now
+                              </button>
+                          </div>
+                      </div>
+                  </section>
+                )}
             </main>
 
             <Footer />

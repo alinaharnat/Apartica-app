@@ -9,7 +9,7 @@ const emptyBooking = {
   checkIn: '',
   checkOut: '',
   totalPrice: 0,
-  status: 'pending',
+  status: 'confirmed',
   numberOfGuests: 1,
 };
 
@@ -97,15 +97,15 @@ const BookingManagementPage = () => {
     }
   };
 
-    const fetchDropdownData = async () => {
-        try {
-        const token = localStorage.getItem('token');
-        const rentersRes = await axios.get('/api/user/renters', { headers: { Authorization: `Bearer ${token}` } });
-        setRenters(rentersRes.data);
-        } catch (err) {
-        console.error('Failed to load dropdown data:', err);
-        }
-        };
+  const fetchDropdownData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const rentersRes = await axios.get('/api/user/renters', { headers: { Authorization: `Bearer ${token}` } });
+      setRenters(rentersRes.data);
+    } catch (err) {
+      console.error('Failed to load dropdown data:', err);
+    }
+  };
         
   const startEdit = (booking) => {
     setEditingBooking(booking);

@@ -95,7 +95,7 @@ const Navbar = ({ user, hideAuthLinks = false }) => {
           </Link>
         ))}
 
-        {isPrivateOwner && (
+        {isPrivateOwner && !isRentalAgency && (
           <Link
             to="/subscription-plans"
             className="px-4 py-1 rounded-full bg-purple-400 text-white text-sm font-medium transition-colors duration-200 hover:bg-purple-500"
