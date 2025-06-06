@@ -25,7 +25,7 @@ const getUserById = asyncHandler(async (req, res) => {
 
 // Создать нового пользователя (администратором)
 const createUser = asyncHandler(async (req, res) => {
-  const { email, name, phoneNumber, userType } = req.body;
+  const { email, name, phoneNumber, userType, gender, birthDate, isBlocked } = req.body;
 
   if (!email || !name) {
     res.status(400);
@@ -44,6 +44,9 @@ const createUser = asyncHandler(async (req, res) => {
     name,
     phoneNumber,
     userType: userType || ['Renter'],
+    gender: gender || '', // Default to empty string if not provided
+    dateOfBirth: birthDate || undefined, // Use undefined if not provided to match schema
+    isBlocked: isBlocked !== undefined ? isBlocked : false, // Default to false if not provided
     isEmailVerified: true
   });
 
@@ -53,6 +56,9 @@ const createUser = asyncHandler(async (req, res) => {
     email: user.email,
     name: user.name,
     userType: user.userType,
+    gender: user.gender,
+    dateOfBirth: user.dateOfBirth,
+    isBlocked: user.isBlocked,
     isEmailVerified: user.isEmailVerified
   });
 });
@@ -70,6 +76,8 @@ const updateUser = asyncHandler(async (req, res) => {
   user.email = req.body.email || user.email;
   user.phoneNumber = req.body.phoneNumber || user.phoneNumber;
   user.userType = req.body.userType || user.userType;
+  user.dateOfBirth = req.body.dateOfBirth || user.dateOfBirth;
+  user.gender = req.body.gender || user.gender;
   user.isBlocked = req.body.isBlocked !== undefined ? req.body.isBlocked : user.isBlocked;
 
   const updatedUser = await user.save();
@@ -80,6 +88,8 @@ const updateUser = asyncHandler(async (req, res) => {
     email: updatedUser.email,
     name: updatedUser.name,
     userType: updatedUser.userType,
+    dateOfBirth: updatedUser.dateOfBirth,
+    gender: updatedUser.gender,
     isBlocked: updatedUser.isBlocked
   });
 });
@@ -184,7 +194,7 @@ const updateBooking = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Booking not found');
   }
-
+  booking.renterId = req.body.renterId || booking.renterId;
   booking.status = req.body.status || booking.status;
   booking.checkIn = req.body.checkIn || booking.checkIn;
   booking.checkOut = req.body.checkOut || booking.checkOut;

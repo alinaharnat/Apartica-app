@@ -13,7 +13,7 @@ const SuccessRedirect = () => {
       return;
     }
 
-    fetch(`http://localhost:5000/api/stripe/checkout-session?session_id=${sessionId}`)
+    fetch(`/api/stripe/checkout-session?session_id=${sessionId}`)
       .then(res => res.json())
       .then(data => {
 

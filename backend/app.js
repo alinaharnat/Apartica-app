@@ -20,6 +20,8 @@ const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
 
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
+
 // Додаємо middleware для парсингу текстових полів із FormData
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());

@@ -39,6 +39,7 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => {
 
 const PropertyManagementPage = () => {
   const [user, setUser] = useState(null);
+  const [users, setUsers] = useState([]);
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -65,6 +66,8 @@ const PropertyManagementPage = () => {
       } else if (userData.userType.includes('Administrator')) {
         setUser(userData);
         fetchUsers();
+        fetchProperties();
+        fetchDropdownData();
       } else {
         navigate('/');
       }
@@ -73,6 +76,21 @@ const PropertyManagementPage = () => {
     }
   }, [navigate]);
 
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('/api/admin/users', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(res.data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchProperties = async () => {
     setLoading(true);
@@ -167,16 +185,16 @@ const PropertyManagementPage = () => {
   const validatePropertyForm = (data) => {
     const errors = [];
 
-    if (!data.title || data.title.trim().length < 5) {
-      errors.push('Title must be at least 5 characters long.');
+    if (!data.title) {
+      errors.push('You must enter title.');
     }
 
-    if (!data.description || data.description.trim().length < 20) {
-      errors.push('Description must be at least 20 characters long.');
+    if (!data.description) {
+      errors.push('You must enter title description.');
     }
 
-    if (!data.address || data.address.trim().length < 5) {
-      errors.push('Address must be at least 5 characters long.');
+    if (!data.address) {
+      errors.push('You must enter title address.');
     }
 
     if (!data.cityId) {
@@ -200,9 +218,10 @@ const PropertyManagementPage = () => {
 
     const token = localStorage.getItem('token');
     try {
-      await axios.delete(`/api/admin/properties/${propertyToDelete._id}`, {
+      const response = await axios.delete(`/api/properties/${propertyToDelete._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      alert(response.data.message);
       await fetchProperties();
     } catch (err) {
       alert('Error deleting property: ' + (err.response?.data?.message || err.message));

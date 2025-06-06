@@ -7,7 +7,7 @@ const User = require('../models/user');
 const Property = require('../models/property');
 const CancellationPolicy = require('../models/cancellationPolicy');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { sendBookingConfirmationEmail, sendBookingCancellationEmail, sendBookingOwnerCancellationEmail } = require('../config/email');
+const { sendBookingConfirmationEmail, sendBookingCancellationEmail, sendBookingOwnerCancellationEmail, sendBookingOwnerConfirmationEmail } = require('../config/email');
 
 // @desc Create a booking and initiate payment
 // @route POST /booking/create
@@ -141,7 +141,7 @@ const handlePaymentSuccess = asyncHandler(async (req, res) => {
     }
 
     const session = await stripe.checkout.sessions.retrieve(session_id, {
-      expand: ['payment_intent'], // Розширюємо, щоб отримати payment_intent
+      expand: ['payment_intent'],
     });
 
     if (session.payment_status === 'paid') {
@@ -151,7 +151,6 @@ const handlePaymentSuccess = asyncHandler(async (req, res) => {
         throw new Error('Payment not found');
       }
 
-      // Оновлюємо transactionId на payment_intent ID
       payment.transactionId = session.payment_intent.id;
       payment.status = 'completed';
 
@@ -199,14 +198,34 @@ const handlePaymentSuccess = asyncHandler(async (req, res) => {
         throw new Error('Property not found');
       }
 
+      const room = await Room.findById(session.metadata.roomId);
+      if (!room) {
+        res.status(404);
+        throw new Error('Room not found');
+      }
+
+      const owner = await User.findById(property.ownerId);
+      if (!owner) {
+        res.status(404);
+        throw new Error('Property owner not found');
+      }
+
       try {
-        await sendBookingConfirmationEmail(
-          session.metadata.guestEmail,
-          session.metadata.guestFullName,
-          property.title
-        );
+        await Promise.all([
+          sendBookingConfirmationEmail(
+            session.metadata.guestEmail,
+            session.metadata.guestFullName,
+            property.title
+          ),
+          sendBookingOwnerConfirmationEmail(
+            owner?.email,
+            property.title,
+            session.metadata.startDate,
+            session.metadata.endDate
+          )
+        ]);
       } catch (emailError) {
-        console.error('Failed to send booking confirmation email:', emailError.message);
+        console.error('Failed to send one or both confirmation emails:', emailError.message);
       }
 
       res.redirect('http://localhost:5173/payment-status?status=success');

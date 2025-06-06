@@ -9,7 +9,7 @@ const emptyUser = {
   name: '',
   email: '',
   phoneNumber: '',
-  userType: 'Renter',
+  userType: ['Renter'], // Default to an array with 'Renter'
   isBlocked: false,
   gender: '',
   birthDate: '',
@@ -102,10 +102,10 @@ const UserManagementPage = () => {
   const formatDate = (dateString) =>
     dateString
       ? new Intl.DateTimeFormat('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        }).format(new Date(dateString))
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(new Date(dateString))
       : '-';
 
   // Start editing a user
@@ -115,9 +115,7 @@ const UserManagementPage = () => {
       name: user.name || '',
       email: user.email || '',
       phoneNumber: user.phoneNumber || '',
-      userType: Array.isArray(user.userType)
-        ? user.userType[0] || 'Renter'
-        : user.userType || 'Renter',
+      userType: Array.isArray(user.userType) ? user.userType : [user.userType] || ['Renter'], // Ensure userType is an array
       isBlocked: !!user.isBlocked,
       gender: sanitizeGender(user.gender),
       birthDate: user.dateOfBirth ? user.dateOfBirth.slice(0, 10) : '',
@@ -135,10 +133,33 @@ const UserManagementPage = () => {
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    if (type === 'checkbox') {
+      // Handle userType checkboxes
+      if (name === 'userType') {
+        setFormData((prev) => {
+          const userType = prev.userType || [];
+          if (checked) {
+            // Add the role if checked
+            return { ...prev, userType: [...userType, value] };
+          } else {
+            // Remove the role if unchecked
+            return { ...prev, userType: userType.filter((role) => role !== value) };
+          }
+        });
+      } else {
+        // Handle other checkboxes (e.g., isBlocked)
+        setFormData((prev) => ({
+          ...prev,
+          [name]: checked,
+        }));
+      }
+    } else {
+      // Handle other inputs
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   // Save user (create or update)
@@ -159,7 +180,7 @@ const UserManagementPage = () => {
     try {
       const payload = {
         ...formData,
-        userType: [formData.userType], // Ensure array for backend
+        userType: formData.userType || ['Renter'], // Ensure userType is an array, default to ['Renter']
         gender: formData.gender.toLowerCase(), // Convert to lowercase
         dateOfBirth: formData.birthDate || undefined, // Map to backend field
       };
@@ -207,9 +228,15 @@ const UserManagementPage = () => {
       errors.push('Invalid gender value.');
     }
 
-    const allowedRoles = ['Renter', 'PropertyOwner', 'Administrator', 'Moderator'];
-    if (!allowedRoles.includes(data.userType)) {
-      errors.push('Invalid role value.');
+    const allowedRoles = ['Renter', 'PropertyOwner', 'Administrator', 'Moderator', 'RentalAgency'];
+    if (!Array.isArray(data.userType) || data.userType.length === 0) {
+      errors.push('At least one role must be selected.');
+    } else {
+      data.userType.forEach((role) => {
+        if (!allowedRoles.includes(role)) {
+          errors.push(`Invalid role value: ${role}`);
+        }
+      });
     }
 
     if (data.birthDate) {
@@ -262,8 +289,8 @@ const UserManagementPage = () => {
 
   // Check if user is admin or moderator for styling
   const isAdminOrModerator = (user) => {
-    const role = Array.isArray(user.userType) ? user.userType[0] : user.userType;
-    return role === 'Administrator' || role === 'Moderator';
+    const role = Array.isArray(user.userType) ? user.userType : [user.userType];
+    return role.includes('Administrator') || role.includes('Moderator');
   };
 
   return (
@@ -281,54 +308,54 @@ const UserManagementPage = () => {
             <div className="overflow-x-auto mb-8">
               <table className="min-w-full bg-white rounded shadow">
                 <thead>
-                  <tr className="bg-gray-200 text-left">
-                    <th className="py-3 px-4">Name</th>
-                    <th className="py-3 px-4">Email</th>
-                    <th className="py-3 px-4">Roles</th>
-                    <th className="py-3 px-4">Gender</th>
-                    <th className="py-3 px-4">Birth Date</th>
-                    <th className="py-3 px-4">Blocked</th>
-                    <th className="py-3 px-4">Actions</th>
-                  </tr>
+                <tr className="bg-gray-200 text-left">
+                  <th className="py-3 px-4">Name</th>
+                  <th className="py-3 px-4">Email</th>
+                  <th className="py-3 px-4">Roles</th>
+                  <th className="py-3 px-4">Gender</th>
+                  <th className="py-3 px-4">Birth Date</th>
+                  <th className="py-3 px-4">Blocked</th>
+                  <th className="py-3 px-4">Actions</th>
+                </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
-                    <tr
-                      key={user._id}
-                      className={`border-t ${isAdminOrModerator(user) ? 'bg-purple-100' : ''}`}
-                    >
-                      <td className="py-2 px-4 font-medium">{user.name}</td>
-                      <td className="py-2 px-4">{user.email}</td>
-                      <td className="py-2 px-4">
-                        {Array.isArray(user.userType)
-                          ? user.userType.join(', ')
-                          : user.userType}
-                      </td>
-                      <td className="py-2 px-4">{sanitizeGender(user.gender) || '-'}</td>
-                      <td className="py-2 px-4">{formatDate(user.dateOfBirth)}</td>
-                      <td className="py-2 px-4">
-                        {user.isBlocked ? (
-                          <span className="text-red-600 font-semibold">Blocked</span>
-                        ) : (
-                          <span className="text-green-600 font-semibold">Active</span>
-                        )}
-                      </td>
-                      <td className="py-2 px-4 space-x-2">
-                        <button
-                          onClick={() => startEdit(user)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => confirmDelete(user)}
-                          className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                {users.map((user) => (
+                  <tr
+                    key={user._id}
+                    className={`border-t ${isAdminOrModerator(user) ? 'bg-purple-100' : ''}`}
+                  >
+                    <td className="py-2 px-4 font-medium">{user.name}</td>
+                    <td className="py-2 px-4">{user.email}</td>
+                    <td className="py-2 px-4">
+                      {Array.isArray(user.userType)
+                        ? user.userType.join(', ')
+                        : user.userType}
+                    </td>
+                    <td className="py-2 px-4">{sanitizeGender(user.gender) || '-'}</td>
+                    <td className="py-2 px-4">{formatDate(user.dateOfBirth)}</td>
+                    <td className="py-2 px-4">
+                      {user.isBlocked ? (
+                        <span className="text-red-600 font-semibold">Blocked</span>
+                      ) : (
+                        <span className="text-green-600 font-semibold">Active</span>
+                      )}
+                    </td>
+                    <td className="py-2 px-4 space-x-2">
+                      <button
+                        onClick={() => startEdit(user)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => confirmDelete(user)}
+                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
                 </tbody>
               </table>
             </div>
@@ -387,14 +414,14 @@ const UserManagementPage = () => {
 
               <fieldset className="mb-4">
                 <legend className="font-semibold mb-2">Roles</legend>
-                {['Renter', 'PropertyOwner', 'Administrator', 'Moderator'].map(
+                {['Renter', 'PropertyOwner', 'Administrator', 'Moderator', 'RentalAgency'].map(
                   (role) => (
                     <label key={role} className="inline-flex items-center mr-6 mb-2">
                       <input
-                        type="radio"
+                        type="checkbox"
                         name="userType"
                         value={role}
-                        checked={formData.userType === role}
+                        checked={formData.userType.includes(role)}
                         onChange={handleInputChange}
                         className="mr-2"
                       />

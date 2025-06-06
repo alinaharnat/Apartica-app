@@ -695,7 +695,7 @@ const deleteProperty = asyncHandler(async (req, res) => {
     if (!property) {
       return res.status(404).json({ message: 'Property not found' });
     }
-    if (property.ownerId.toString() !== req.user._id.toString()) {
+    if (property.ownerId.toString() !== req.user._id.toString() && !req.user.userType.includes('Administrator') && !req.user.userType.includes('Moderator')) {
       return res.status(403).json({ message: 'Unauthorized: You are not the owner of this property' });
     }
 

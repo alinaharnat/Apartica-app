@@ -108,7 +108,7 @@ const Navbar = ({ user, hideAuthLinks = false }) => {
         {isRentalAgency && (
           <Link
             to="/subscription-plans"
-            className="px-4 py-1 rounded-full bg-gold-400 text-white text-sm font-medium transition-colors duration-200 hover:bg-purple-500"
+            className="px-4 py-1 rounded-full bg-yellow-600 text-white text-sm font-medium transition-colors duration-200 hover:bg-purple-500"
             style={{ marginLeft: '4px', marginRight: '4px' }}
           >
             Rental Agency

@@ -102,6 +102,54 @@ const sendBookingConfirmationEmail = async (email, fullGuestName, propertyName) 
   }
 };
 
+const sendBookingOwnerConfirmationEmail = async (email, propertyTitle, startdate, enddate) => {
+  console.log('--- sendBookingConfirmationEmail function called ---');
+  console.log(`Attempting to send to: ${email}, propertyTitle: ${propertyTitle}, startdate: ${startdate}`,`enddate: ${enddate}` );
+
+  if (!process.env.EMAIL_FROM) {
+    console.error('!!! EMAIL_FROM is not set in environment variables. Cannot send email. !!!');
+    throw new Error('Email sender (EMAIL_FROM) is not configured.');
+  }
+  if (!process.env.SENDGRID_API_KEY) {
+    console.error('!!! SENDGRID_API_KEY is not set. Cannot send email. !!!');
+    throw new Error('SendGrid API Key is not configured.');
+  }
+
+  const msg = {
+    to: email,
+    from: {
+      email: process.env.EMAIL_FROM,
+      name: 'Apartica Support',
+    },
+    subject: 'Your Booking Confirmation with Apartica',
+    html: `
+      <h1>Hello, dear Propery Owner!</h1>
+      <p>Someone has successfully booked your <strong>${propertyTitle}</strong> property.</p>
+      <p>You can view all details in your Apartica profile.</p>
+      <p>Thank you for choosing Apartica! If you have any questions, feel free to contact our support team.</p>
+      <p>Best regards,<br>Apartica Team</p>
+    `,
+    text: `Hello, dear Propery Owner!\nSomeone has successfully booked your ${propertyTitle} property.\nYou can view all details in your Apartica profile.\nThank you for choosing Apartica! If you have any questions, feel free to contact our support team.\nBest regards,\nApartica Team`
+  };
+
+  console.log('Attempting to send booking confirmation email with data:', JSON.stringify(msg, null, 2));
+
+  try {
+    await sgMail.send(msg);
+    console.log(`Booking confirmation email sent to ${email}`);
+  } catch (error) {
+    console.error('Error sending booking confirmation email:', error.message);
+    if (error.response) {
+      console.error('SendGrid Response Body:', error.response.body);
+      console.error('SendGrid Response Status Code:', error.response.statusCode);
+      console.error('SendGrid Response Headers:', error.response.headers);
+    } else {
+      console.error('Error sending email (no SendGrid response):', error);
+    }
+    throw new Error('Failed to send booking confirmation email.');
+  }
+};
+
 const sendBookingCancellationEmail = async (email, fullGuestName, propertyName, refundAmount) => {
   console.log('--- sendBookingCancellationEmail function called ---');
   console.log(`Attempting to send to: ${email}, fullGuestName: ${fullGuestName}, propertyName: ${propertyName}, refundAmount: ${refundAmount}`);
@@ -198,4 +246,4 @@ const sendBookingOwnerCancellationEmail = async (email, fullGuestName, propertyN
   }
 };
 
-module.exports = { sendVerificationEmail, sendBookingConfirmationEmail, sendBookingCancellationEmail, sendBookingOwnerCancellationEmail };
+module.exports = { sendVerificationEmail, sendBookingConfirmationEmail, sendBookingCancellationEmail, sendBookingOwnerCancellationEmail, sendBookingOwnerConfirmationEmail };

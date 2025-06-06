@@ -128,9 +128,10 @@ const ModeratorPropertyManagementPage = () => {
 
     const token = localStorage.getItem('token');
     try {
-      await axios.delete(`/api/moderator/properties/${propertyToDelete._id}`, {
+      const response = await axios.delete(`/api/properties/${propertyToDelete._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      alert(response.data.message);
       await fetchProperties();
     } catch (err) {
       alert('Error deleting property: ' + (err.response?.data?.message || err.message));

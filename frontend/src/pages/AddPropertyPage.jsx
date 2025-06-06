@@ -587,7 +587,7 @@ const AddPropertyPage = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Price per Night</label>
+                                        <label className="block text-sm font-medium text-gray-700">Price per Night (€)</label>
                                         <input
                                           type="number"
                                           min="0"

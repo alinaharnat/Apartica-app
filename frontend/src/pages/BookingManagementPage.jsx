@@ -39,6 +39,7 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => {
 
 const BookingManagementPage = () => {
   const [user, setUser] = useState(null);
+  const [users, setUsers] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -54,16 +55,33 @@ const BookingManagementPage = () => {
 
   const navigate = useNavigate();
 
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('/api/admin/users', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(res.data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
       const userData = JSON.parse(stored);
       if (userData.isBlocked) {
         navigate('/');
-        // Optionally set notification via a global state (e.g., Redux) or URL param
       } else if (userData.userType.includes('Administrator')) {
         setUser(userData);
         fetchUsers();
+        fetchBookings();
+        fetchDropdownData(); // Add this to load renters for the dropdown
       } else {
         navigate('/');
       }
@@ -78,16 +96,18 @@ const BookingManagementPage = () => {
     try {
       const token = localStorage.getItem('token');
       const userData = JSON.parse(localStorage.getItem('user'));
-      
+
       // Use different endpoints based on user role
-      const endpoint = userData.userType === 'Admin' 
+      const endpoint = userData.userType.includes('Administrator')
         ? '/api/admin/bookings'
         : '/api/booking/owner';
-        
+
       const res = await axios.get(`http://localhost:5000${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setBookings(res.data.currentBookings || []);
+      // Update this line: res.data is an array, not an object with currentBookings
+      setBookings(res.data || []);
+      console.log(res.data); // Log to verify the data
       setError(null);
     } catch (err) {
       setError('Failed to load bookings');
@@ -263,7 +283,7 @@ const BookingManagementPage = () => {
                       <td className="py-2 px-4">{getRenterName(booking)}</td>
                       <td className="py-2 px-4">{formatDate(booking.checkIn)}</td>
                       <td className="py-2 px-4">{formatDate(booking.checkOut)}</td>
-                      <td className="py-2 px-4">${booking.totalPrice.toFixed(2)}</td>
+                      <td className="py-2 px-4">€{booking.totalPrice.toFixed(2)}</td>
                       <td className="py-2 px-4">{booking.numberOfGuests}</td>
                       <td className="py-2 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColors[booking.status]}`}>
@@ -316,7 +336,9 @@ const BookingManagementPage = () => {
                   >
                     <option value="">Select a renter</option>
                     {renters.map(renter => (
-                      <option key={renter._id} value={renter._id}>{renter.name}</option>
+                      <option key={renter._id} value={renter._id}>
+                        {renter.name} ({renter.email})
+                      </option>
                     ))}
                   </select>
                 </label>
