@@ -29,7 +29,7 @@ function PopularCities() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/popular-cities');
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/popular-cities`);
         if (!res.ok) throw new Error('Network response was not ok');
         const data = await res.json();
         // фільтруємо міста з 0 помешкань і обмежуємо до 10

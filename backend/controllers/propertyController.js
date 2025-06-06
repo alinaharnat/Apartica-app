@@ -216,7 +216,7 @@ const createPropertyWithRooms = asyncHandler(async (req, res) => {
     createdRooms.push(newRoom);
   }
 
-  const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
+  const BASE_URL = process.env.BASE_URL || `${import.meta.env.VITE_API_URL}`;
   const propertyPhotos = req.files.photos || [];
   const photosToSave = [];
   for (const photo of propertyPhotos) {

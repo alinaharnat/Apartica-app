@@ -35,7 +35,7 @@ const MyPropertiesPage = () => {
         },
       };
 
-      const response = await axios.get(`http://localhost:5000/api/properties/user/${user.userId}`, config);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/properties/user/${user.userId}`, config);
       console.log('Properties received:', response.data);
       setProperties(response.data);
     } catch (error) {
@@ -59,7 +59,7 @@ const MyPropertiesPage = () => {
           break;
         case 'delete':
           if (window.confirm('Are you sure you want to delete this property?')) {
-            const response = await axios.delete(`http://localhost:5000/api/properties/${propertyId}`, config);
+            const response = await axios.delete(`${import.meta.env.VITE_API_URL}/api/properties/${propertyId}`, config);
             alert(response.data.message);
             await fetchProperties();
           }
@@ -69,7 +69,7 @@ const MyPropertiesPage = () => {
           const newStatus = !property.isListed;
           if (window.confirm(`Are you sure you want to ${newStatus ? 'list' : 'unlist'} this property?`)) {
             const response = await axios.patch(
-              `http://localhost:5000/api/properties/${propertyId}`,
+              `${import.meta.env.VITE_API_URL}/api/properties/${propertyId}`,
               { isListed: newStatus },
               config
             );

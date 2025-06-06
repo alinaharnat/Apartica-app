@@ -65,7 +65,7 @@ const AuthPage = () => {
     setLoading(true);
     setMessage(null);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -93,7 +93,7 @@ const AuthPage = () => {
     setLoading(true);
     setMessage(null);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/email-login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/email-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: loginEmail }) // Використовуємо loginEmail
@@ -118,7 +118,7 @@ const AuthPage = () => {
     setLoading(true);
     setMessage(null);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/verify-email', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/verify-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailForVerification, token: verificationCode })
@@ -296,7 +296,7 @@ const AuthPage = () => {
               <div className="mt-5 text-center text-xs sm:text-sm text-gray-500">or choose one of the options</div>
               <div className="mt-3 flex justify-center gap-4 sm:gap-6">
                 <button
-                  onClick={() => window.location.href = 'http://localhost:5000/api/auth/google'}
+                  onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`}
                   className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center border border-gray-300 rounded-full shadow-md hover:shadow-lg transition-shadow duration-200"
                   title="Sign in with Google"
                 >

@@ -57,7 +57,7 @@ const Hero = () => {
       setApiError(null);
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/cities/search?q=${encodeURIComponent(debouncedDestination)}`
+          `${import.meta.env.VITE_API_URL}/api/cities/search?q=${encodeURIComponent(debouncedDestination)}`
         );
         setCitySuggestions(response.data);
       } catch (error) {

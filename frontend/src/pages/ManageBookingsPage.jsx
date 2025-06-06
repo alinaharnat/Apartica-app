@@ -46,7 +46,7 @@ const ManageBookingsPage = () => {
       if (!token) {
         throw new Error('No authentication token found');
       }
-      const url = 'http://localhost:5000/api/booking/user';
+      const url = `${import.meta.env.VITE_API_URL}/api/booking/user`;
       console.log('Fetching bookings from:', url, 'with token:', token.substring(0, 20) + '...');
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -86,7 +86,7 @@ const ManageBookingsPage = () => {
       const token = localStorage.getItem('token');
       console.log('Cancelling bookingId:', bookingId);
       const response = await axios.post(
-        `http://localhost:5000/api/booking/${bookingId}/cancel`,
+        `${import.meta.env.VITE_API_URL}/api/booking/${bookingId}/cancel`,
         { cancelBy: 'owner' }, // Explicitly set cancelBy to 'owner'
         {
           headers: { Authorization: `Bearer ${token}` },

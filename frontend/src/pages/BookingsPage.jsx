@@ -37,7 +37,7 @@ const BookingsPage = () => {
   const fetchBookings = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/booking/user', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/booking/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCurrentBookings(response.data.currentBookings);
@@ -58,7 +58,7 @@ const BookingsPage = () => {
   const getRefundAmount = async (bookingId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/booking/${bookingId}/refund-amount`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/booking/${bookingId}/refund-amount`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data.refundAmount;
@@ -81,7 +81,7 @@ const BookingsPage = () => {
 
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `http://localhost:5000/api/booking/${bookingId}/cancel`,
+        `${import.meta.env.VITE_API_URL}/api/booking/${bookingId}/cancel`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },

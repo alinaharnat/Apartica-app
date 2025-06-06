@@ -102,7 +102,7 @@ const BookingManagementPage = () => {
         ? '/api/admin/bookings'
         : '/api/booking/owner';
 
-      const res = await axios.get(`http://localhost:5000${endpoint}`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       // Update this line: res.data is an array, not an object with currentBookings

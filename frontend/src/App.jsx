@@ -35,7 +35,7 @@ const App = () => {
   useEffect(() => {
     const fetchGoogleMapsKey = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/config/google-maps-key');
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/config/google-maps-key`);
         if (!response.ok) {
           throw new Error('Failed to fetch Google Maps API key');
         }
