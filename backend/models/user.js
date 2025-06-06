@@ -36,7 +36,7 @@ const userSchema = mongoose.Schema(
     },
     userType: {
       type: [String], // Масив рядків
-      enum: ['Renter', 'PropertyOwner', 'Administrator', 'Moderator'],
+      enum: ['Renter', 'PropertyOwner', 'Administrator', 'Moderator', 'RentalAgency'],
       default: ['Renter'],
       required: true,
     },

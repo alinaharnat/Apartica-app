@@ -683,6 +683,63 @@ const getRoomsByPropertyIds = asyncHandler(async (req, res) => {
     throw new Error('Server error');
   }
 });
+
+const deleteProperty = asyncHandler(async (req, res) => {
+  try {
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid property ID' });
+    }
+
+    const property = await Property.findById(req.params.id);
+    if (!property) {
+      return res.status(404).json({ message: 'Property not found' });
+    }
+    if (property.ownerId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Unauthorized: You are not the owner of this property' });
+    }
+
+    // Find rooms associated with the property
+    const rooms = await Room.find({ propertyId: property._id });
+    const roomIds = rooms.map(room => room._id);
+
+    // Check for pending or confirmed bookings
+    const bookings = await Booking.find({
+      roomId: { $in: roomIds },
+      status: { $in: ['pending', 'confirmed'] },
+    });
+
+    if (bookings.length > 0) {
+      // Set isListed to false instead of deleting
+      property.isListed = false;
+      await property.save();
+      return res.status(200).json({
+        message: 'Property has active bookings and cannot be deleted. It has been unlisted instead.',
+        isListed: false,
+      });
+    }
+
+    // Delete photos associated with the property and its rooms
+    await Photo.deleteMany({
+      $or: [
+        { propertyId: property._id },
+        { roomId: { $in: roomIds } },
+      ],
+    });
+
+    // Delete rooms
+    await Room.deleteMany({ propertyId: property._id });
+
+    // Delete the property
+    await Property.deleteOne({ _id: property._id });
+
+    res.json({ message: 'Property and all associated data deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting property:', error.message, error.stack);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = {
   createPropertyWithRooms: [
     upload.fields([
@@ -698,5 +755,5 @@ module.exports = {
   getFormData,
   getPropertiesByOwner,
   getRoomsByPropertyIds,
-
+  deleteProperty,
 };

@@ -7,7 +7,7 @@ const User = require('../models/user');
 const Property = require('../models/property');
 const CancellationPolicy = require('../models/cancellationPolicy');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { sendBookingConfirmationEmail, sendBookingCancellationEmail } = require('../config/email');
+const { sendBookingConfirmationEmail, sendBookingCancellationEmail, sendBookingOwnerCancellationEmail } = require('../config/email');
 
 // @desc Create a booking and initiate payment
 // @route POST /booking/create
@@ -257,7 +257,7 @@ const getUserBookings = asyncHandler(async (req, res) => {
     const bookings = await Booking.find({ renterId })
       .populate({
         path: 'roomId',
-        select: 'propertyId',
+        select: 'propertyId bedrooms bathrooms',
         populate: {
           path: 'propertyId',
           select: 'title address cityId',
@@ -335,31 +335,88 @@ const cancelBooking = asyncHandler(async (req, res) => {
       throw new Error('Payment not found or not completed');
     }
 
-    const today = new Date();
-    const checkIn = new Date(booking.checkIn);
-    const timeDiff = checkIn - today;
-    const daysBeforeCheckIn = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+    // Log payment details for debugging
+    console.log('Payment details:', {
+      paymentId: payment._id,
+      transactionId: payment.transactionId,
+      paymentMethod: payment.paymentMethod,
+      amount: payment.amount,
+    });
 
-    const cancellationPolicy = booking.roomId?.propertyId?.cancellationPolicyId;
-    if (!cancellationPolicy || !cancellationPolicy.rules) {
+    // Verify payment method is Stripe
+    if (payment.paymentMethod !== 'stripe') {
       res.status(400);
-      throw new Error('Cancellation policy not found');
+      throw new Error(`Refunds not supported for payment method: ${payment.paymentMethod}`);
     }
 
-    let refundPercentage = 0;
-    for (const rule of cancellationPolicy.rules) {
-      if (daysBeforeCheckIn >= rule.daysBeforeCheckIn) {
-        refundPercentage = rule.refundPercentage;
-        break;
+    // Verify transactionId exists
+    if (!payment.transactionId) {
+      res.status(400);
+      throw new Error('No transaction ID found for this payment');
+    }
+
+    let paymentIntentId = payment.transactionId;
+
+    // Check if transactionId is a Checkout Session ID (starts with 'cs_')
+    if (payment.transactionId.startsWith('cs_')) {
+      try {
+        const session = await stripe.checkout.sessions.retrieve(payment.transactionId, {
+          expand: ['payment_intent'],
+        });
+        if (!session.payment_intent) {
+          res.status(400);
+          throw new Error('No payment intent found for this checkout session');
+        }
+        paymentIntentId = session.payment_intent.id;
+        console.log('Retrieved Payment Intent ID:', paymentIntentId);
+      } catch (stripeError) {
+        console.error('Error retrieving checkout session:', {
+          message: stripeError.message,
+          transactionId: payment.transactionId,
+        });
+        res.status(500);
+        throw new Error('Failed to retrieve payment intent from checkout session');
       }
     }
 
-    const refundAmount = (payment.amount * refundPercentage) / 100;
+    let refundAmount;
+    let emailFunction;
+
+    if (cancelBy === 'owner') {
+      // Owner cancellation: refund full amount
+      refundAmount = payment.amount;
+      booking.status = 'cancelled_by_owner';
+      emailFunction = sendBookingOwnerCancellationEmail;
+    } else {
+      // Renter cancellation: apply cancellation policy
+      const today = new Date();
+      const checkIn = new Date(booking.checkIn);
+      const timeDiff = checkIn - today;
+      const daysBeforeCheckIn = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+      const cancellationPolicy = booking.roomId?.propertyId?.cancellationPolicyId;
+      if (!cancellationPolicy || !cancellationPolicy.rules) {
+        res.status(400);
+        throw new Error('Cancellation policy not found');
+      }
+
+      let refundPercentage = 0;
+      for (const rule of cancellationPolicy.rules) {
+        if (daysBeforeCheckIn >= rule.daysBeforeCheckIn) {
+          refundPercentage = rule.refundPercentage;
+          break;
+        }
+      }
+
+      refundAmount = (payment.amount * refundPercentage) / 100;
+      booking.status = 'cancelled_by_renter';
+      emailFunction = sendBookingCancellationEmail;
+    }
 
     if (refundAmount > 0) {
       try {
         const refund = await stripe.refunds.create({
-          payment_intent: payment.transactionId,
+          payment_intent: paymentIntentId,
           amount: Math.round(refundAmount * 100),
         });
 
@@ -367,7 +424,10 @@ const cancelBooking = asyncHandler(async (req, res) => {
         payment.amount = refundAmount;
         await payment.save();
       } catch (stripeError) {
-        console.error('Stripe refund error:', stripeError.message);
+        console.error('Stripe refund error:', {
+          message: stripeError.message,
+          paymentIntentId,
+        });
         res.status(500);
         throw new Error('Failed to process refund');
       }
@@ -376,11 +436,10 @@ const cancelBooking = asyncHandler(async (req, res) => {
       await payment.save();
     }
 
-    booking.status = cancelBy === 'owner' ? 'cancelled_by_owner' : 'cancelled_by_renter';
     await booking.save();
 
     try {
-      await sendBookingCancellationEmail(
+      await emailFunction(
         booking.guestEmail,
         booking.guestFullName,
         booking.roomId.propertyId.title,
@@ -397,6 +456,7 @@ const cancelBooking = asyncHandler(async (req, res) => {
     throw new Error(error.message || 'Server error');
   }
 });
+
 
 const getRefundAmount = asyncHandler(async (req, res) => {
   try {

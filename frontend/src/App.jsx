@@ -16,6 +16,7 @@ import BookingPage from './pages/BookingPage';
 import PaymentStatusPage from './pages/PaymentStatusPage';
 import PropertyManagementPage from './pages/PropertyManagementPage';
 import BookingManagementPage from './pages/BookingManagementPage';
+import ManageBookingsPage from './pages/ManageBookingsPage';
 import SearchResults from './pages/SearchResults';
 import SubscriptionPlansPage from './pages/SubscriptionPlansPage';
 import MyPropertiesPage from './pages/MyPropertiesPage';
@@ -86,7 +87,7 @@ const App = () => {
         <Route path="/payment-status" element={<PaymentStatusPage />} />
         <Route path="/admin/properties" element={<PropertyManagementPage />} />
         <Route path="/admin/bookings" element={<BookingManagementPage />} />
-        <Route path="/manage-bookings" element={<BookingManagementPage />} />
+        <Route path="/manage-bookings" element={<ManageBookingsPage />} />
         <Route path="/my-properties" element={<MyPropertiesPage />} />
         <Route path="/subscription-plans" element={<SubscriptionPlansPage />} />
         <Route path="/success" element={<SuccessRedirect />} />

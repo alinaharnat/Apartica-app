@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom'; // імпортуємо Link для перенаправлення
 
 function PopularCities() {
   const [cities, setCities] = useState([]);
-  const [error,  setError] = useState(null);
+  const [error, setError] = useState(null);
 
   // прапорці для видимості стрілок
-  const [canScrollLeft,  setCanScrollLeft]  = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
   const scrollContainerRef = useRef(null);
@@ -31,7 +32,11 @@ function PopularCities() {
         const res = await fetch('http://localhost:5000/api/popular-cities');
         if (!res.ok) throw new Error('Network response was not ok');
         const data = await res.json();
-        setCities(data);
+        // фільтруємо міста з 0 помешкань і обмежуємо до 10
+        const filteredCities = data
+          .filter(city => city.propertyCount > 0)
+          .slice(0, 10);
+        setCities(filteredCities);
       } catch (e) {
         setError(e.message);
       }
@@ -82,16 +87,16 @@ function PopularCities() {
         className="flex space-x-4 overflow-x-scroll scrollbar-hide scroll-smooth pb-4"
       >
         {cities.map((city) => (
-          <div
+          <Link
             key={city._id}
+            to={`/search?city=${encodeURIComponent(city.name)}`}
             className="min-w-[250px] bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow flex-shrink-0"
           >
-          <img
-            src={city.imageUrl}
-            alt={city.name}
-            className="w-full h-48 object-cover rounded-t-lg"
-          />
-
+            <img
+              src={city.imageUrl}
+              alt={city.name}
+              className="w-full h-48 object-cover rounded-t-lg"
+            />
             {/* ---- підписи ---- */}
             <div className="p-4">
               <h2 className="font-semibold text-lg leading-none mb-1">
@@ -101,7 +106,7 @@ function PopularCities() {
                 {city.propertyCount.toLocaleString('en-US')} properties
               </p>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

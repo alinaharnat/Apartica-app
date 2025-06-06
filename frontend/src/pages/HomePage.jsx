@@ -44,11 +44,11 @@ const HomePage = () => {
       <main className="flex-grow p-4 text-center">
         {/* Main content */}
       </main>
-      <div className="mb-10">
+      <div>
         <PopularCities />
       </div>
       <HotelCard />
-      <div className="mb-10">
+      <div className="mb-5">
         {!user && <NewCustomerDiscount />}
       </div>
       <Footer />

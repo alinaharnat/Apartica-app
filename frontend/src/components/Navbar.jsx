@@ -11,9 +11,8 @@ const Navbar = ({ user, hideAuthLinks = false }) => {
   const dropdownRef = useRef(null);
 
   // Add property count check - only for PropertyOwners
-  const isPropertyOwner = user?.userType?.includes('PropertyOwner');
-  const isPrivateOwner = isPropertyOwner && userProperties.length >= 1 && userProperties.length <= 2;
-  const isRentalAgency = isPropertyOwner && userProperties.length >= 3;
+  const isPrivateOwner = user?.userType?.includes('PropertyOwner');
+  const isRentalAgency = user?.userType?.includes('RentalAgency');
 
   const staticLinks = [
     { name: 'Home', path: '/' },
@@ -98,7 +97,7 @@ const Navbar = ({ user, hideAuthLinks = false }) => {
 
         {isPrivateOwner && (
           <Link
-            to="/private-owner"
+            to="/subscription-plans"
             className="px-4 py-1 rounded-full bg-purple-400 text-white text-sm font-medium transition-colors duration-200 hover:bg-purple-500"
             style={{ marginLeft: '4px', marginRight: '4px' }}
           >
@@ -108,8 +107,8 @@ const Navbar = ({ user, hideAuthLinks = false }) => {
 
         {isRentalAgency && (
           <Link
-            to="/rental-agency"
-            className="px-4 py-1 rounded-full bg-purple-400 text-white text-sm font-medium transition-colors duration-200 hover:bg-purple-500"
+            to="/subscription-plans"
+            className="px-4 py-1 rounded-full bg-gold-400 text-white text-sm font-medium transition-colors duration-200 hover:bg-purple-500"
             style={{ marginLeft: '4px', marginRight: '4px' }}
           >
             Rental Agency
@@ -163,12 +162,20 @@ const Navbar = ({ user, hideAuthLinks = false }) => {
                               <span>🛠</span> Moderator Panel
                             </Link>
                           )}
+                          {!user?.userType?.includes('Administrator') && !user?.userType?.includes('Moderator') && (isPrivateOwner || isRentalAgency) && (
+                          <Link
+                            to="/my-properties"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                          >
+                            <span>🏠</span> My properties
+                          </Link>
+                          )}
                           {!user?.userType?.includes('Administrator') && !user?.userType?.includes('Moderator') && (
                             <Link
                               to="/bookings"
                               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                             >
-                              <span>🛏</span> Мої бронювання
+                              <span>🛏</span> My bookings
                             </Link>
                           )}
                           <button

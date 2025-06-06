@@ -150,4 +150,52 @@ const sendBookingCancellationEmail = async (email, fullGuestName, propertyName, 
   }
 };
 
-module.exports = { sendVerificationEmail, sendBookingConfirmationEmail, sendBookingCancellationEmail };
+const sendBookingOwnerCancellationEmail = async (email, fullGuestName, propertyName, refundAmount) => {
+  console.log('--- sendBookingOwnerCancellationEmail function called ---');
+  console.log(`Attempting to send to: ${email}, fullGuestName: ${fullGuestName}, propertyName: ${propertyName}, refundAmount: ${refundAmount}`);
+
+  if (!process.env.EMAIL_FROM) {
+    console.error('!!! EMAIL_FROM is not set in environment variables. Cannot send email. !!!');
+    throw new Error('Email sender (EMAIL_FROM) is not configured.');
+  }
+  if (!process.env.SENDGRID_API_KEY) {
+    console.error('!!! SENDGRID_API_KEY is not set. Cannot send email. !!!');
+    throw new Error('SendGrid API Key is not configured.');
+  }
+
+  const msg = {
+    to: email,
+    from: {
+      email: process.env.EMAIL_FROM,
+      name: 'Apartica Support',
+    },
+    subject: 'Your Booking Cancellation with Apartica',
+    html: `
+      <h1>Hello, ${fullGuestName}!</h1>
+      <p>We are sorry to inform you that your booking at <strong>${propertyName}</strong> has been cancelled by owner.</p>
+      <p>A refund of full booking price (<strong>€${refundAmount.toFixed(2)}</strong>) has been processed and will be credited to your original payment method.</p>
+      <p>Sorry for any inconveniences. If you have any questions, feel free to contact our support team.</p>
+      <p>Best regards,<br>Apartica Team</p>
+    `,
+    text: `Hello, ${fullGuestName}!\nWe are sorry to inform you that your booking at ${propertyName} has been cancelled by owner.\nA refund of full booking price (€${refundAmount.toFixed(2)}) has been processed and will be credited to your original payment method.\nSorry for any inconveniences. If you have any questions, feel free to contact our support team.\nBest regards,\nApartica Team`
+  };
+
+  console.log('Attempting to send booking cancellation email with data:', JSON.stringify(msg, null, 2));
+
+  try {
+    await sgMail.send(msg);
+    console.log(`Booking cancellation email sent to ${email}`);
+  } catch (error) {
+    console.error('Error sending booking cancellation email:', error.message);
+    if (error.response) {
+      console.error('SendGrid Response Body:', error.response.body);
+      console.error('SendGrid Response Status Code:', error.response.statusCode);
+      console.error('SendGrid Response Headers:', error.response.headers);
+    } else {
+      console.error('Error sending email (no SendGrid response):', error);
+    }
+    throw new Error('Failed to send booking cancellation email.');
+  }
+};
+
+module.exports = { sendVerificationEmail, sendBookingConfirmationEmail, sendBookingCancellationEmail, sendBookingOwnerCancellationEmail };

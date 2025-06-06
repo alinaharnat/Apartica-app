@@ -36,6 +36,7 @@ const MyPropertiesPage = () => {
       };
 
       const response = await axios.get(`http://localhost:5000/api/properties/user/${user.userId}`, config);
+      console.log('Properties received:', response.data);
       setProperties(response.data);
     } catch (error) {
       console.error('Failed to fetch properties:', error);
@@ -58,8 +59,21 @@ const MyPropertiesPage = () => {
           break;
         case 'delete':
           if (window.confirm('Are you sure you want to delete this property?')) {
-            await axios.delete(`http://localhost:5000/api/properties/${propertyId}`, config);
-            alert('Property deleted successfully!');
+            const response = await axios.delete(`http://localhost:5000/api/properties/${propertyId}`, config);
+            alert(response.data.message);
+            await fetchProperties();
+          }
+          break;
+        case 'toggleListing':
+          const property = properties.find(p => p._id === propertyId);
+          const newStatus = !property.isListed;
+          if (window.confirm(`Are you sure you want to ${newStatus ? 'list' : 'unlist'} this property?`)) {
+            const response = await axios.patch(
+              `http://localhost:5000/api/properties/${propertyId}`,
+              { isListed: newStatus },
+              config
+            );
+            alert(response.data.message);
             await fetchProperties();
           }
           break;
@@ -68,12 +82,8 @@ const MyPropertiesPage = () => {
       }
     } catch (error) {
       console.error(`Failed to ${action} property:`, error);
-      alert(`Failed to ${action} property: ${error.response?.data?.message || 'Server error'}`);
+      alert(error.response?.data?.message || `Failed to ${action} property: Server error`);
     }
-  };
-
-  const handleViewProperty = (propertyId) => {
-    navigate(`/properties/${propertyId}`);
   };
 
   useEffect(() => {
@@ -163,51 +173,63 @@ const MyPropertiesPage = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-gray-50 text-left text-sm text-gray-600">
-                        <th className="px-4 py-3 font-medium">Name</th>
-                        <th className="px-4 py-3 font-medium">Address</th>
-                        <th className="px-4 py-3 font-medium">Created</th>
-                        <th className="px-4 py-3 font-medium">Action</th>
-                      </tr>
+                    <tr className="bg-gray-50 text-left text-sm text-gray-600">
+                      <th className="px-4 py-3 font-medium">Name</th>
+                      <th className="px-4 py-3 font-medium">Address</th>
+                      <th className="px-4 py-3 font-medium">Status</th>
+                      <th className="px-4 py-3 font-medium">Created</th>
+                      <th className="px-4 py-3 font-medium">Action</th>
+                    </tr>
                     </thead>
                     <tbody>
-                      {properties.map((property, index) => (
-                        <tr
-                          key={property._id}
-                          className={`border-t border-gray-200 hover:bg-gray-50 ${
-                            index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                          }`}
-                        >
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 bg-black rounded-full"></div>
-                              <span className="text-sm font-medium text-gray-800">
+                    {properties.map((property, index) => (
+                      <tr
+                        key={property._id}
+                        className={`border-t border-gray-200 hover:bg-gray-50 ${
+                          index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                        }`}
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-black rounded-full"></div>
+                            <span className="text-sm font-medium text-gray-800">
                                 {property.title}
                               </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
-                            {property.address}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
-                            {formatDate(property.createdAt)}
-                          </td>
-                          <td className="px-4 py-3 flex gap-2">
-                            <button
-                              className="text-blue-600 text-sm hover:underline"
-                              onClick={() => handleAction(property._id, 'view')}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {property.address}
+                        </td>
+                        <td className="px-4 py-3">
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-medium ${
+                                property.isListed
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}
                             >
-                              View
-                            </button>
-                            <button
-                              className="text-gray-600 text-sm hover:text-red-600 hover:underline"
-                              onClick={() => handleAction(property._id, 'delete')}
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                              {property.isListed ? 'Listed' : 'Unlisted'}
+                            </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {formatDate(property.createdAt)}
+                        </td>
+                        <td className="px-4 py-3 flex gap-2">
+                          <button
+                            className="text-blue-600 text-sm hover:underline"
+                            onClick={() => handleAction(property._id, 'view')}
+                          >
+                            View
+                          </button>
+                          <button
+                            className="text-gray-600 text-sm hover:text-red-600 hover:underline"
+                            onClick={() => handleAction(property._id, 'delete')}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
                     </tbody>
                   </table>
                 </div>
