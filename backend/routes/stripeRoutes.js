@@ -42,8 +42,8 @@ router.post('/create-subscription-session', async (req, res) => {
         },
       ],
       metadata: { userId: userId.toString() },
-      success_url: 'http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: 'http://localhost:5173/cancel',
+      success_url: 'https://apartica-frontend.onrender.com/success?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: 'https://apartica-frontend.onrender.com/cancel',
     });
 
     console.log('Subscription session created:', session.id, 'with userId:', userId);

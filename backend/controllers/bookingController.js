@@ -228,7 +228,7 @@ const handlePaymentSuccess = asyncHandler(async (req, res) => {
         console.error('Failed to send one or both confirmation emails:', emailError.message);
       }
 
-      res.redirect('http://localhost:5173/payment-status?status=success');
+      res.redirect('https://apartica-frontend.onrender.com/payment-status?status=success');
     } else {
       res.status(400);
       throw new Error('Payment not completed');
@@ -261,7 +261,7 @@ const handlePaymentCancel = asyncHandler(async (req, res) => {
     payment.status = 'failed';
     await payment.save();
 
-    res.redirect('http://localhost:5173/booking?payment=cancelled');
+    res.redirect('https://apartica-frontend.onrender.com/booking?payment=cancelled');
   } catch (error) {
     console.error('Error in handlePaymentCancel:', error.message, error.stack);
     res.status(500);
