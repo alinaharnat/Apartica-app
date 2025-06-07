@@ -1,7 +1,14 @@
 import React from 'react';
 import discountImg from '../assets/save-money.png';
+import { useNavigate } from 'react-router-dom';
 
 const NewCustomerDiscount = () => {
+  const navigate = useNavigate();
+
+  const register = async () => {
+    navigate('/auth?mode=register');
+  }
+
   return (
     <div className="w-full flex justify-center px-3">
       <div
@@ -24,7 +31,9 @@ const NewCustomerDiscount = () => {
             Save&nbsp;10% at your first booking – register now and receive a discount as a new customer
           </p>
 
-          <button className="
+          <button
+            onClick={register}
+            className="
               bg-[#8252A1] hover:bg-purple-800 transition-colors
               text-white font-semibold
               text-xs sm:text-sm lg:text-base

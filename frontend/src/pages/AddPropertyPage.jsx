@@ -265,8 +265,14 @@ const AddPropertyPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (formData.photos.length < 1 || formData.photos.length > 20) {
-            alert('Please add at least 1 photo and no more than 20 for the property.');
+        if (formData.photos.length < 8 || formData.photos.length > 20) {
+            alert('Please add at least 8 photo and no more than 20 for the property.');
+            return;
+        }
+
+        const roomsWithoutPhotos = formData.rooms.filter(room => room.roomPhotos.length < 1);
+        if (roomsWithoutPhotos.length > 0) {
+            alert('Please add at least 1 photo for each room.');
             return;
         }
 

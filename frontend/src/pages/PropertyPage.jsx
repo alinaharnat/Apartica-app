@@ -477,7 +477,7 @@ const PropertyPage = () => {
                 }`}
                 onClick={() => {
                   setModalPhotos(property.photos);
-                  PropertyPage.setSelectedPhotoIndex(idx);
+                  setSelectedPhotoIndex(idx);
                   setIsGalleryOpen(true);
                 }}
               >
