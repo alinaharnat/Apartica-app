@@ -32,7 +32,7 @@ const NewCustomerDiscount = () => {
           </p>
 
           <button
-            onClick={register}
+            onClick={() => navigate('/auth?mode=register')}
             className="
               bg-[#8252A1] hover:bg-purple-800 transition-colors
               text-white font-semibold
